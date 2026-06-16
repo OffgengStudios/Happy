@@ -1,0 +1,50 @@
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ─── Node ─────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ─── Python / CV Parser ───────────────────────────────────────────────────────
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
+pytest-cache-files-*/
+CV-Parser/cv_system_output/logs/
+CV-Parser/cv_system_output/uploads/
+CV-Parser/cv_system_output/tmp/
+CV-Parser/cv_system_output/tests/_tmp_uploads/
+CV-Parser/cv_system_output/reports/
+
+# ─── Next.js (CV Parser frontend) ────────────────────────────────────────────
+.next/
+*.tsbuildinfo
+
+# ─── Participant data — never commit real PII ─────────────────────────────────
+*.docx
+*.pdf
+
+# ─── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+*.swp
+
+# ─── Clasp (Apps Script CLI) ──────────────────────────────────────────────────
+.clasp.json
+appsscript.json
+
+# Legacy / separate services (not part of the Pages deploy repo)
+/CV-Parser/
+/happy-kollekt/
+/happy-consent-form/
+/CV- Parser for the system/

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAPPY — Partnerships Dashboard</title>
+  <meta name="api-endpoint" content="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden{display:none!important} .nav-link{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.375rem;cursor:pointer;font-size:.875rem;color:#d1d5db} .nav-link:hover,.nav-link.active{background:#1f2937;color:#fff} .card{background:#fff;border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1.25rem} .btn{padding:.5rem 1rem;border-radius:.375rem;font-weight:600;font-size:.875rem;cursor:pointer} .btn-primary{background:#16a34a;color:#fff} .btn-primary:hover{background:#15803d} .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db} .form-input{width:100%;border:1px solid #d1d5db;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem} .form-label{display:block;font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em} .badge{display:inline-block;padding:.125rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:600} .badge-green{background:#dcfce7;color:#15803d} .badge-red{background:#fee2e2;color:#b91c1c} .badge-blue{background:#dbeafe;color:#1d4ed8} .badge-gray{background:#f3f4f6;color:#374151} .status-bar{padding:.5rem .75rem;border-radius:.375rem;font-size:.875rem;margin-top:.5rem} .status-error{background:#fef2f2;color:#991b1b} .status-success{background:#f0fdf4;color:#15803d} .status-info{background:#eff6ff;color:#1e40af} table{width:100%;border-collapse:collapse;font-size:.875rem} th{text-align:left;padding:.5rem .75rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600} td{padding:.5rem .75rem;border-bottom:1px solid #f3f4f6} tr:hover td{background:#f9fafb} .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center} .modal{background:#fff;border-radius:.75rem;padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+</head>
+<body class="min-h-screen">
+  <div id="login-overlay" class="hk-login">
+    <div class="hk-login-card">
+      <div class="hk-logo mb-4">HK</div>
+      <h1 class="text-xl font-bold mb-1">Partnerships Dashboard</h1>
+      <p class="text-sm text-gray-500 mb-6">Employer &amp; Partner Management</p>
+      <div id="login-msg" class="status-bar status-error hidden mb-4"></div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div><label class="form-label">Email</label><input id="login-email" class="form-input" type="email" required /></div>
+        <div><label class="form-label">Password</label><input id="login-pw" class="form-input" type="password" required /></div>
+        <button type="submit" id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-bg" class="modal-bg hidden"><div id="modal" class="modal"><div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="font-bold"></h3><button onclick="closeModal()" class="text-gray-400 text-xl">&times;</button></div><div id="modal-body"></div></div></div>
+
+  <div id="app" class="hidden flex h-screen overflow-hidden">
+    <aside class="w-52 hk-sidebar flex-shrink-0 flex flex-col">
+      <div class="px-4 py-4 border-b border-white/15 flex items-center gap-2">
+        <div class="hk-logo" style="width:34px;height:34px;font-size:.8rem;">HK</div>
+        <div><p class="text-white font-bold text-sm leading-tight">Partnerships</p><p id="sidebar-user" class="text-white/60 text-xs truncate"></p></div>
+      </div>
+      <nav class="flex-1 px-2 py-3 space-y-1">
+        <a class="nav-link" onclick="showSection('jobs')">Job Opportunities</a>
+        <a class="nav-link" onclick="showSection('placements')">Placements</a>
+        <a class="nav-link" onclick="showSection('participants')">Participants</a>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/15"><button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button></div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="bg-white border-b px-6 py-3 flex items-center justify-between">
+        <h2 id="section-title" class="font-semibold text-gray-800">Job Opportunities</h2>
+        <span id="header-user" class="text-sm text-gray-500"></span>
+      </header>
+      <div id="global-status" class="status-bar hidden mx-6 mt-3"></div>
+      <main class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+        <section id="section-jobs" class="space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Job Opportunities</p>
+            <button class="btn btn-primary text-sm" onclick="openJobModal(null)">+ Add Opportunity</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Job ID</th><th>Employer</th><th>Role</th><th>Sector</th><th>Region</th><th>Status</th><th></th></tr></thead>
+            <tbody id="jobs-tbody"><tr><td colspan="7" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <section id="section-placements" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Placements</p>
+            <button class="btn btn-primary text-sm" onclick="openPlacementModal()">+ Record Placement</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="pl-search" class="form-input flex-1 text-sm py-1.5" placeholder="Search by participant ID or employer…" />
+            <button class="btn btn-secondary text-sm" onclick="loadPlacements()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Placement ID</th><th>Participant</th><th>Employer</th><th>Role</th><th>Start Date</th><th>Status</th></tr></thead>
+            <tbody id="placements-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <section id="section-participants" class="hidden space-y-3">
+          <div class="flex gap-2">
+            <input id="p-search-q" class="form-input flex-1 text-sm py-1.5" placeholder="Search participants…" />
+            <button class="btn btn-primary text-sm" onclick="searchParticipants()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>HAPPY ID</th><th>Name</th><th>Region</th><th>Stage</th></tr></thead>
+            <tbody id="p-tbody"><tr><td colspan="4" class="text-center text-gray-400 py-6">Enter a search term.</td></tr></tbody></table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../shared/config.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/permissions.js"></script>
+  <script src="../shared/a11y.js"></script>
+  <script>
+    function showLoginScreen(msg){document.getElementById('app').classList.add('hidden');document.getElementById('login-overlay').classList.remove('hidden');if(msg){const el=document.getElementById('login-msg');el.textContent=msg;el.classList.remove('hidden');}}
+    async function handleLogin(e){e.preventDefault();const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in…';try{await staffLogin(document.getElementById('login-email').value.trim(),document.getElementById('login-pw').value);document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}catch(err){const el=document.getElementById('login-msg');el.textContent=staffApiErrorMessage(err);el.className='status-bar status-error mb-4';el.classList.remove('hidden');}finally{btn.disabled=false;btn.textContent='Sign In';}}
+    async function handleLogout(){await staffLogout();showLoginScreen();}
+    function initDashboard(){const user=staffGetCurrentUser();if(!user)return showLoginScreen();document.getElementById('sidebar-user').textContent=user.displayName||user.email;document.getElementById('header-user').textContent=(user.displayName||user.email)+' · Partnerships';showSection('jobs');loadJobs();}
+    const TITLES={'jobs':'Job Opportunities','placements':'Placements','participants':'Participants'};
+    function showSection(id){document.querySelectorAll('section[id^="section-"]').forEach(s=>s.classList.add('hidden'));document.getElementById('section-'+id).classList.remove('hidden');document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));document.querySelectorAll('.nav-link').forEach(l=>{if(l.getAttribute('onclick')&&l.getAttribute('onclick').includes("'"+id+"'"))l.classList.add('active');});document.getElementById('section-title').textContent=TITLES[id]||id;if(id==='placements')loadPlacements();}
+    function setGlobalStatus(msg,type){const el=document.getElementById('global-status');if(!msg){el.classList.add('hidden');return;}el.className='status-bar status-'+(type||'info')+' mx-6 mt-3';el.textContent=msg;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000);}
+
+    async function loadJobs(){const tbody=document.getElementById('jobs-tbody');try{const data=await staffApiPost('searchJobOpportunities',{limit:100});const rows=data.jobs||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="text-center text-gray-400 py-6">No job opportunities.</td></tr>';return;}tbody.innerHTML=rows.map(j=>`<tr><td class="font-mono text-xs">${esc(j.jobOpportunityId)}</td><td>${esc(j.employerName)}</td><td>${esc(j.jobRole)}</td><td class="text-xs">${esc(j.sector)}</td><td class="text-xs">${esc(j.region)}</td><td><span class="badge ${j.status==='open'?'badge-green':'badge-gray'}">${esc(j.status)}</span></td><td><button class="text-sm text-blue-600 underline" onclick='openJobModal(${JSON.stringify(j)})'>Edit</button></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="7" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openJobModal(job){const isEdit=!!job;openModal(isEdit?'Edit Job Opportunity':'New Job Opportunity',`<form class="space-y-3" onsubmit="submitJob(event,'${esc(job&&job.jobOpportunityId||'')}')"><div><label class="form-label">Employer Name</label><input id="j-employer" class="form-input" required value="${esc(job&&job.employerName||'')}" /></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Sector</label><input id="j-sector" class="form-input" value="${esc(job&&job.sector||'')}" /></div><div><label class="form-label">Industry</label><input id="j-industry" class="form-input" value="${esc(job&&job.industry||'')}" /></div></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Job Role</label><input id="j-role" class="form-input" required value="${esc(job&&job.jobRole||'')}" /></div><div><label class="form-label">Employment Type</label><select id="j-emptype" class="form-input"><option value="full-time">Full-time</option><option value="part-time">Part-time</option><option value="contract">Contract</option><option value="apprenticeship">Apprenticeship</option></select></div></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Region</label><input id="j-region" class="form-input" value="${esc(job&&job.region||'')}" /></div><div><label class="form-label">Openings</label><input id="j-openings" class="form-input" type="number" min="1" value="${esc(job&&job.openings||1)}" /></div></div><div><label class="form-label">Required Skills</label><textarea id="j-skills" class="form-input" rows="2">${esc(job&&job.requiredSkills||'')}</textarea></div><div><label class="form-label">Status</label><select id="j-status" class="form-input"><option value="open">Open</option><option value="closed">Closed</option><option value="filled">Filled</option></select></div><div id="j-modal-status" class="hidden"></div><button type="submit" class="btn btn-primary w-full">${isEdit?'Update':'Create'}</button></form>`);}
+
+    async function submitJob(e,jobId){e.preventDefault();const p={employerName:document.getElementById('j-employer').value.trim(),sector:document.getElementById('j-sector').value.trim(),industry:document.getElementById('j-industry').value.trim(),jobRole:document.getElementById('j-role').value.trim(),employmentType:document.getElementById('j-emptype').value,region:document.getElementById('j-region').value.trim(),openings:parseInt(document.getElementById('j-openings').value)||1,requiredSkills:document.getElementById('j-skills').value.trim(),status:document.getElementById('j-status').value};if(jobId)p.jobOpportunityId=jobId;try{await staffApiPost(jobId?'updateJobOpportunity':'createJobOpportunity',p);closeModal();setGlobalStatus(jobId?'Updated.':'Created.','success');loadJobs();}catch(err){const el=document.getElementById('j-modal-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    async function loadPlacements(){const tbody=document.getElementById('placements-tbody');const q=document.getElementById('pl-search').value.trim();try{const data=await staffApiPost('searchPlacements',{q,limit:100});const rows=data.placements||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No placements.</td></tr>';return;}tbody.innerHTML=rows.map(p=>`<tr><td class="font-mono text-xs">${esc(p.placementId)}</td><td class="font-mono text-xs">${esc(p.participantId)}</td><td>${esc(p.employerName||p.placedByPartner)}</td><td class="text-xs">${esc(p.jobRole)}</td><td class="text-xs">${esc(p.placementStartDate)}</td><td><span class="badge badge-blue">${esc(p.placementStatus)}</span></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openPlacementModal(){openModal('Record Placement',`<form class="space-y-3" onsubmit="submitPlacement(event)"><div><label class="form-label">Participant ID</label><input id="pl-pid" class="form-input" required /></div><div><label class="form-label">Job Opportunity ID (optional)</label><input id="pl-jobid" class="form-input" /></div><div><label class="form-label">Employer Name</label><input id="pl-employer" class="form-input" required /></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Job Role</label><input id="pl-role" class="form-input" required /></div><div><label class="form-label">Employment Type</label><select id="pl-emptype" class="form-input"><option>full-time</option><option>part-time</option><option>contract</option><option>apprenticeship</option></select></div></div><div><label class="form-label">Start Date</label><input id="pl-start" class="form-input" type="date" required /></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Region</label><input id="pl-region" class="form-input" /></div><div><label class="form-label">District</label><input id="pl-district" class="form-input" /></div></div><div id="pl-modal-status" class="hidden"></div><button type="submit" class="btn btn-primary w-full">Save</button></form>`);}
+    async function submitPlacement(e){e.preventDefault();try{await staffApiPost('recordPlacement',{participantId:document.getElementById('pl-pid').value.trim(),jobOpportunityId:document.getElementById('pl-jobid').value.trim()||null,employerName:document.getElementById('pl-employer').value.trim(),jobRole:document.getElementById('pl-role').value.trim(),employmentType:document.getElementById('pl-emptype').value,placementStartDate:document.getElementById('pl-start').value,placementRegion:document.getElementById('pl-region').value.trim(),placementDistrict:document.getElementById('pl-district').value.trim()});closeModal();setGlobalStatus('Placement recorded.','success');loadPlacements();}catch(err){const el=document.getElementById('pl-modal-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    async function searchParticipants(){const q=document.getElementById('p-search-q').value.trim();const tbody=document.getElementById('p-tbody');tbody.innerHTML='<tr><td colspan="4" class="text-center text-gray-400 py-6">Searching…</td></tr>';try{const data=await staffApiPost('searchParticipants',{q});const rows=data.participants||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="text-center text-gray-400 py-6">No results.</td></tr>';return;}tbody.innerHTML=rows.map(p=>`<tr><td class="font-mono text-xs">${esc(p.participantId)}</td><td>${esc([p.firstName,p.surname].filter(Boolean).join(' ')||p.consentName)}</td><td class="text-xs">${esc(p.region)}</td><td><span class="badge badge-blue">${esc(p.currentStage)}</span></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="4" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openModal(title,bodyHtml){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=bodyHtml;document.getElementById('modal-bg').classList.remove('hidden');}
+    function closeModal(){document.getElementById('modal-bg').classList.add('hidden');}
+    document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target.id==='modal-bg')closeModal();});
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    document.addEventListener('DOMContentLoaded',()=>{if(isStaffAuthenticated()){document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}else showLoginScreen();});
+  </script>
+</body>
+</html>

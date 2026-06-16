@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap');
+/* ═══════════════════════════════════════════════════════════════════════
+   HAPPY KOLLECT — shared staff dashboard theme (HK indigo/violet)
+   Loaded by every staff dashboard. Keeps the class hooks the dashboard JS
+   relies on (.card, .btn-primary, .badge-*, .status-*, table, .modal …)
+   but restyles them to the Happy Kollect brand.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --hk-brand:   #5B45E8;
+  --hk-brand-2: #7C3AED;
+  --hk-brand-d: #4F3DD4;
+  --hk-ink:     #1e293b;
+  --hk-muted:   #64748b;
+  --hk-line:    #e2e8f0;
+  --hk-surface: #f5f6fb;
+}
+
+body { background: var(--hk-surface); color: var(--hk-ink); font-family: 'Atkinson Hyperlegible', 'Inter', ui-sans-serif, system-ui, sans-serif; }
+.btn, .form-input, .form-label, .nav-link, table, .badge { font-family: inherit; }
+
+.hidden { display: none !important; }
+
+/* ── LOGIN ── */
+.hk-login {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.25rem;
+  background: linear-gradient(150deg, #4F3DD4 0%, #5B45E8 55%, #7C3AED 100%);
+}
+.hk-login-card {
+  background: #fff; border-radius: 1rem;
+  box-shadow: 0 24px 60px rgba(15,23,42,.35);
+  padding: 2rem; width: 100%; max-width: 24rem;
+  animation: hkUp .35s cubic-bezier(.16,1,.3,1) both;
+}
+.hk-logo {
+  width: 48px; height: 48px; border-radius: .75rem;
+  background: linear-gradient(135deg, var(--hk-brand), var(--hk-brand-2));
+  color: #fff; font-weight: 800; font-size: 1.05rem; letter-spacing: -.02em;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(91,69,232,.4);
+}
+
+/* ── SIDEBAR ── */
+.hk-sidebar {
+  background: linear-gradient(165deg, #4F3DD4 0%, #5B45E8 60%, #7C3AED 100%);
+  color: #fff;
+}
+.hk-sidebar .nav-link { color: rgba(255,255,255,.82); }
+.hk-sidebar .nav-link:hover { background: rgba(255,255,255,.14); color: #fff; }
+.hk-sidebar .nav-link.active { background: #fff; color: var(--hk-brand-d); font-weight: 700; }
+.hk-sidebar .hk-sidebar-divider { height: 1px; background: rgba(255,255,255,.15); margin: .5rem .25rem; }
+
+/* ── TOP BAR ── */
+.hk-topbar { background: #fff; border-bottom: 1px solid var(--hk-line); }
+
+/* ── NAV LINK ── */
+.nav-link {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .6rem .8rem; border-radius: .5rem;
+  cursor: pointer; font-size: .875rem; font-weight: 600;
+  color: var(--hk-muted); transition: background .15s, color .15s;
+  min-height: 42px;
+}
+.nav-link:hover, .nav-link.active { background: #ede9fe; color: var(--hk-brand-d); }
+
+/* ── CARDS ── */
+.card {
+  background: #fff; border-radius: .75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  padding: 1.25rem; border: 1px solid #eef0f6;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  padding: .55rem 1.05rem; border-radius: .5rem;
+  font-weight: 700; font-size: .875rem; cursor: pointer;
+  border: none; transition: background .15s, box-shadow .15s, transform .1s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: linear-gradient(135deg, var(--hk-brand), var(--hk-brand-2)); color: #fff; box-shadow: 0 2px 8px rgba(91,69,232,.32); }
+.btn-primary:hover { background: linear-gradient(135deg, var(--hk-brand-d), #6d28d9); box-shadow: 0 4px 14px rgba(91,69,232,.42); }
+.btn-primary:disabled { background: #c4b5fd; cursor: not-allowed; box-shadow: none; }
+.btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid var(--hk-line); }
+.btn-secondary:hover { background: #e9edf3; }
+
+/* ── FORM ── */
+.form-input {
+  width: 100%; border: 1.5px solid #cbd5e1; border-radius: .5rem;
+  padding: .55rem .75rem; font-size: .875rem; background: #fff;
+  transition: border-color .15s, box-shadow .15s; outline: none;
+}
+.form-input:focus { border-color: var(--hk-brand); box-shadow: 0 0 0 3px rgba(91,69,232,.14); }
+.form-label { display: block; font-size: .7rem; font-weight: 700; color: var(--hk-muted); margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .05em; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: .15rem .55rem; border-radius: 9999px; font-size: .72rem; font-weight: 700; }
+.badge-green  { background: #dcfce7; color: #15803d; }
+.badge-red    { background: #fee2e2; color: #b91c1c; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
+.badge-blue   { background: #ede9fe; color: var(--hk-brand-d); }
+.badge-gray   { background: #f1f5f9; color: #475569; }
+
+/* ── STATUS ── */
+.status-bar { padding: .55rem .8rem; border-radius: .5rem; font-size: .85rem; margin-top: .5rem; font-weight: 500; }
+.status-error   { background: #fef2f2; color: #991b1b; border-left: 3px solid #ef4444; }
+.status-success { background: #f0fdf4; color: #15803d; border-left: 3px solid #22c55e; }
+.status-info    { background: #eef2ff; color: var(--hk-brand-d); border-left: 3px solid var(--hk-brand); }
+
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th { text-align: left; padding: .6rem .8rem; background: #f6f7fb; border-bottom: 2px solid #e9ecf4; font-weight: 700; color: #475569; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+td { padding: .6rem .8rem; border-bottom: 1px solid #f1f3f9; }
+tbody tr { transition: background .12s; }
+tr:hover td { background: #faf9ff; }
+
+/* ── MODAL ── */
+.modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal { background: #fff; border-radius: .9rem; padding: 1.5rem; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(15,23,42,.35); animation: hkUp .3s cubic-bezier(.16,1,.3,1) both; }
+
+/* ── PRESS FEEDBACK + KEYBOARD FOCUS (a11y) ── */
+.btn:active, .nav-link:active { transform: scale(.97); }
+.btn:focus-visible,
+.nav-link:focus-visible,
+.form-input:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(91,69,232,.55);
+  outline-offset: 2px;
+}
+.hk-sidebar .nav-link:focus-visible { outline-color: rgba(255,255,255,.85); }
+
+@keyframes hkUp { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

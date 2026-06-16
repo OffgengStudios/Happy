@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAPPY — IT Admin Panel</title>
+  <meta name="api-endpoint" content="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden        { display: none !important; }
+    .nav-link      { display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:.375rem; cursor:pointer; font-size:.875rem; color:#d1d5db; }
+    .nav-link:hover, .nav-link.active { background:#1f2937; color:#fff; }
+    .card          { background:#fff; border-radius:.5rem; box-shadow:0 1px 3px rgba(0,0,0,.1); padding:1.25rem; }
+    .btn           { padding:.5rem 1rem; border-radius:.375rem; font-weight:600; font-size:.875rem; cursor:pointer; }
+    .btn-primary   { background:#16a34a; color:#fff; }
+    .btn-primary:hover  { background:#15803d; }
+    .btn-secondary { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; }
+    .btn-danger    { background:#dc2626; color:#fff; }
+    .btn-danger:hover   { background:#b91c1c; }
+    .form-input    { width:100%; border:1px solid #d1d5db; border-radius:.375rem; padding:.5rem .75rem; font-size:.875rem; }
+    .form-label    { display:block; font-size:.75rem; font-weight:600; color:#6b7280; margin-bottom:.25rem; text-transform:uppercase; letter-spacing:.05em; }
+    .badge         { display:inline-block; padding:.125rem .5rem; border-radius:9999px; font-size:.75rem; font-weight:600; }
+    .badge-green   { background:#dcfce7; color:#15803d; }
+    .badge-red     { background:#fee2e2; color:#b91c1c; }
+    .badge-yellow  { background:#fef9c3; color:#854d0e; }
+    .badge-blue    { background:#dbeafe; color:#1d4ed8; }
+    .badge-gray    { background:#f3f4f6; color:#374151; }
+    .status-bar    { padding:.5rem .75rem; border-radius:.375rem; font-size:.875rem; margin-top:.5rem; }
+    .status-error  { background:#fef2f2; color:#991b1b; }
+    .status-success{ background:#f0fdf4; color:#15803d; }
+    .status-info   { background:#eff6ff; color:#1e40af; }
+    table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    th    { text-align:left; padding:.5rem .75rem; background:#f9fafb; border-bottom:1px solid #e5e7eb; font-weight:600; color:#374151; }
+    td    { padding:.5rem .75rem; border-bottom:1px solid #f3f4f6; color:#374151; }
+    tr:hover td { background:#f9fafb; }
+    .modal-bg  { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; display:flex; align-items:center; justify-content:center; }
+    .modal     { background:#fff; border-radius:.75rem; padding:1.5rem; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../staff-dashboards/shared/theme.css" />
+</head>
+<body class="min-h-screen">
+
+  <!-- ── LOGIN OVERLAY ──────────────────────────────────────────────────────── -->
+  <div id="login-overlay" class="hk-login">
+    <div class="hk-login-card">
+      <div class="text-center mb-6">
+        <div class="hk-logo mx-auto mb-3">HK</div>
+        <h1 class="text-xl font-bold text-gray-900">HAPPY Admin Panel</h1>
+        <p class="text-sm text-gray-500 mt-1">IT Administrator Access</p>
+      </div>
+      <div id="login-msg" class="status-bar status-info hidden mb-4"></div>
+      <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
+        <div>
+          <label class="form-label" for="login-email">Email</label>
+          <input id="login-email" class="form-input" type="email" required autocomplete="email" />
+        </div>
+        <div>
+          <label class="form-label" for="login-pw">Password</label>
+          <input id="login-pw" class="form-input" type="password" required autocomplete="current-password" />
+        </div>
+        <button type="submit" id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── MODAL ──────────────────────────────────────────────────────────────── -->
+  <div id="modal-bg" class="modal-bg hidden">
+    <div id="modal" class="modal">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="modal-title" class="font-bold text-gray-900"></h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD ──────────────────────────────────────────────────────────── -->
+  <div id="app" class="hidden flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-56 hk-sidebar flex-shrink-0 flex flex-col">
+      <div class="px-4 py-4 border-b border-white/15 flex items-center gap-2">
+        <div class="hk-logo" style="width:34px;height:34px;font-size:.8rem;">HK</div>
+        <div>
+          <p class="text-white font-bold text-sm leading-tight">HAPPY Admin</p>
+          <p id="sidebar-user" class="text-white/60 text-xs truncate"></p>
+        </div>
+      </div>
+      <nav class="flex-1 px-2 py-3 space-y-1 overflow-y-auto">
+        <a class="nav-link" onclick="showSection('dashboard')">Dashboard</a>
+        <a class="nav-link" onclick="showSection('staff-users')">Staff Users</a>
+        <a class="nav-link" onclick="showSection('system-config')">System Config</a>
+        <a class="nav-link" onclick="showSection('data-quality')">Data Quality</a>
+        <a class="nav-link" onclick="showSection('audit-log')">Audit Log</a>
+        <a class="nav-link" onclick="showSection('participants')">Participants</a>
+        <a class="nav-link" onclick="showSection('bootstrap')">Bootstrap</a>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/15">
+        <button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="bg-white border-b px-6 py-3 flex items-center justify-between flex-shrink-0">
+        <h2 id="section-title" class="font-semibold text-gray-800">Dashboard</h2>
+        <span id="header-user" class="text-sm text-gray-500"></span>
+      </header>
+      <div id="global-status" class="status-bar hidden mx-6 mt-3"></div>
+      <main class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+        <!-- DASHBOARD -->
+        <section id="section-dashboard" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div class="card text-center">
+              <p class="text-2xl font-bold text-green-700" id="stat-participants">—</p>
+              <p class="text-xs text-gray-500 mt-1">Participants</p>
+            </div>
+            <div class="card text-center">
+              <p class="text-2xl font-bold text-blue-700" id="stat-staff">—</p>
+              <p class="text-xs text-gray-500 mt-1">Staff Users</p>
+            </div>
+            <div class="card text-center">
+              <p class="text-2xl font-bold text-red-700" id="stat-dq">—</p>
+              <p class="text-xs text-gray-500 mt-1">Open DQ Issues</p>
+            </div>
+            <div class="card text-center">
+              <p class="text-2xl font-bold text-gray-700" id="stat-env">—</p>
+              <p class="text-xs text-gray-500 mt-1">Environment</p>
+            </div>
+          </div>
+          <div class="card">
+            <p class="text-sm font-semibold mb-2">Quick Actions</p>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-sm text-sm" onclick="showSection('staff-users'); openCreateStaffModal()">Add Staff User</button>
+              <button class="btn btn-secondary text-sm" onclick="runDqScan()">Run DQ Scan</button>
+              <button class="btn btn-secondary text-sm" onclick="showSection('bootstrap')">Run Bootstrap</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- STAFF USERS -->
+        <section id="section-staff-users" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Staff Users</p>
+            <button class="btn btn-primary text-sm" onclick="openCreateStaffModal()">+ Add User</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table id="staff-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
+              <tbody id="staff-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- SYSTEM CONFIG -->
+        <section id="section-system-config" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">System Configuration</p>
+            <button class="btn btn-secondary text-sm" onclick="loadSystemConfig()">Refresh</button>
+          </div>
+          <div class="card space-y-2" id="config-list"><p class="text-gray-400 text-sm">Loading…</p></div>
+        </section>
+
+        <!-- DATA QUALITY -->
+        <section id="section-data-quality" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Data Quality Issues</p>
+            <div class="flex gap-2">
+              <select id="dq-filter-status" class="form-input w-auto text-sm py-1" onchange="loadDqIssues()">
+                <option value="open">Open</option>
+                <option value="in_review">In Review</option>
+                <option value="">All</option>
+              </select>
+              <button class="btn btn-primary text-sm" onclick="runDqScan()">Run Scan</button>
+            </div>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table id="dq-table">
+              <thead><tr><th>Participant</th><th>Type</th><th>Severity</th><th>Field</th><th>Detected</th><th></th></tr></thead>
+              <tbody id="dq-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- AUDIT LOG -->
+        <section id="section-audit-log" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Audit Log</p>
+            <div class="flex gap-2">
+              <input id="audit-filter-pid" class="form-input w-48 text-sm py-1" placeholder="Participant ID" />
+              <button class="btn btn-secondary text-sm" onclick="loadAuditLog()">Search</button>
+            </div>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table>
+              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Status</th></tr></thead>
+              <tbody id="audit-tbody"><tr><td colspan="5" class="text-center text-gray-400 py-6">Enter a participant ID or click Search.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PARTICIPANTS -->
+        <section id="section-participants" class="hidden space-y-3">
+          <div class="flex gap-2">
+            <input id="p-search-q" class="form-input flex-1 text-sm py-1.5" placeholder="Search by name, phone, ID…" />
+            <button class="btn btn-primary text-sm" onclick="searchParticipants()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table>
+              <thead><tr><th>HAPPY ID</th><th>Name</th><th>Phone</th><th>Stage</th><th>Status</th><th></th></tr></thead>
+              <tbody id="p-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Enter a search term above.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- BOOTSTRAP -->
+        <section id="section-bootstrap" class="hidden space-y-4">
+          <div class="card space-y-3">
+            <p class="font-semibold">Schema Bootstrap</p>
+            <p class="text-sm text-gray-600">Creates all 16 canonical Sheets tabs with correct headers. Safe to run multiple times.</p>
+            <button class="btn btn-primary text-sm" onclick="runBootstrap()">Run bootstrapSchema()</button>
+            <div id="bootstrap-result" class="hidden"></div>
+          </div>
+          <div class="card space-y-3">
+            <p class="font-semibold">Install DQ Scan Trigger</p>
+            <p class="text-sm text-gray-600">Creates an hourly time-based trigger for the data quality scan.</p>
+            <button class="btn btn-secondary text-sm" onclick="installDqTrigger()">Install DQ Trigger</button>
+            <div id="trigger-result" class="hidden"></div>
+          </div>
+          <div class="card space-y-3">
+            <p class="font-semibold">First Admin Bootstrap</p>
+            <p class="text-sm text-gray-600">Used only when no IT Admin exists yet. Self-seals after first use.</p>
+            <form id="bootstrap-admin-form" class="space-y-3" onsubmit="bootstrapAdmin(event)">
+              <div>
+                <label class="form-label">Admin Email</label>
+                <input id="ba-email" class="form-input text-sm" type="email" required />
+              </div>
+              <div>
+                <label class="form-label">Password</label>
+                <input id="ba-pw" class="form-input text-sm" type="password" required />
+              </div>
+              <div>
+                <label class="form-label">Display Name</label>
+                <input id="ba-name" class="form-input text-sm" type="text" required />
+              </div>
+              <button type="submit" class="btn btn-danger text-sm">Bootstrap First Admin</button>
+            </form>
+            <div id="ba-result" class="hidden"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../staff-dashboards/shared/config.js"></script>
+  <script src="../staff-dashboards/shared/api.js"></script>
+  <script src="../staff-dashboards/shared/auth.js"></script>
+  <script src="../staff-dashboards/shared/permissions.js"></script>
+  <script src="../staff-dashboards/shared/a11y.js"></script>
+  <script>
+    // ─── LOGIN ─────────────────────────────────────────────────────────────────
+
+    function showLoginScreen(msg) {
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('login-overlay').classList.remove('hidden');
+      if (msg) {
+        const el = document.getElementById('login-msg');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn   = document.getElementById('login-btn');
+      const email = document.getElementById('login-email').value.trim();
+      const pw    = document.getElementById('login-pw').value;
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        await staffLogin(email, pw);
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        initDashboard();
+      } catch (err) {
+        const msg = document.getElementById('login-msg');
+        msg.textContent = staffApiErrorMessage(err);
+        msg.className = 'status-bar status-error mb-4';
+        msg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Sign In';
+      }
+    }
+
+    async function handleLogout() {
+      await staffLogout();
+      showLoginScreen();
+    }
+
+    // ─── NAVIGATION ────────────────────────────────────────────────────────────
+
+    const SECTION_TITLES = {
+      'dashboard': 'Dashboard', 'staff-users': 'Staff Users',
+      'system-config': 'System Configuration', 'data-quality': 'Data Quality Issues',
+      'audit-log': 'Audit Log', 'participants': 'Participants', 'bootstrap': 'Bootstrap Tools',
+    };
+
+    function showSection(id) {
+      document.querySelectorAll('section[id^="section-"]').forEach(s => s.classList.add('hidden'));
+      document.getElementById('section-' + id).classList.remove('hidden');
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll(`.nav-link`).forEach(l => {
+        if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'")) l.classList.add('active');
+      });
+      document.getElementById('section-title').textContent = SECTION_TITLES[id] || id;
+      // Lazy-load section data
+      if (id === 'staff-users')    loadStaffUsers();
+      if (id === 'system-config')  loadSystemConfig();
+      if (id === 'data-quality')   loadDqIssues();
+    }
+
+    function setGlobalStatus(msg, type) {
+      const el = document.getElementById('global-status');
+      if (!msg) { el.classList.add('hidden'); return; }
+      el.className = 'status-bar status-' + (type || 'info') + ' mx-6 mt-3';
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    // ─── INIT ──────────────────────────────────────────────────────────────────
+
+    function initDashboard() {
+      const user = staffGetCurrentUser();
+      if (!user) return showLoginScreen();
+      document.getElementById('sidebar-user').textContent = user.displayName || user.email;
+      document.getElementById('header-user').textContent  = (user.displayName || user.email) + ' · IT Admin';
+      showSection('dashboard');
+      loadDashboardStats();
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const data = await staffApiPost('searchParticipants', { limit: 0 });
+        document.getElementById('stat-participants').textContent = data.total || '—';
+      } catch (_) {}
+      try {
+        const data = await staffApiPost('listDataQualityIssues', { status: 'open' });
+        document.getElementById('stat-dq').textContent = data.total || 0;
+      } catch (_) {}
+      const cfg = await safeApiPost('getSystemConfig', {});
+      if (cfg) {
+        document.getElementById('stat-env').textContent = cfg.environment || '—';
+      }
+    }
+
+    async function safeApiPost(action, payload) {
+      try { return await staffApiPost(action, payload); } catch (_) { return null; }
+    }
+
+    // ─── STAFF USERS ───────────────────────────────────────────────────────────
+
+    async function loadStaffUsers() {
+      const tbody = document.getElementById('staff-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';
+      try {
+        const data = await staffApiPost('listStaffUsers', {});
+        renderStaffTable(data.staffUsers || []);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;
+      }
+    }
+
+    function renderStaffTable(users) {
+      const tbody = document.getElementById('staff-tbody');
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">No staff users found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${esc(u.displayName)}</td>
+          <td>${esc(u.email)}</td>
+          <td><span class="badge badge-blue">${esc(u.role)}</span></td>
+          <td><span class="badge ${u.status === 'active' ? 'badge-green' : 'badge-red'}">${esc(u.status)}</span></td>
+          <td class="text-gray-400 text-xs">${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : '—'}</td>
+          <td><button class="text-sm text-blue-600 underline" onclick="openEditStaffModal(${JSON.stringify(u)})">Edit</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function openCreateStaffModal() {
+      openModal('Create Staff User', `
+        <form id="create-staff-form" class="space-y-3" onsubmit="submitCreateStaff(event)">
+          <div><label class="form-label">Email</label><input id="cs-email" class="form-input" type="email" required /></div>
+          <div><label class="form-label">Display Name</label><input id="cs-name" class="form-input" type="text" required /></div>
+          <div><label class="form-label">Role</label>
+            <select id="cs-role" class="form-input">
+              <option value="me_officer">M&E Officer</option>
+              <option value="partnerships">Partnerships</option>
+              <option value="recruitment">Recruitment</option>
+              <option value="youth_engagement">Youth Engagement</option>
+              <option value="it_admin">IT Admin</option>
+            </select>
+          </div>
+          <div><label class="form-label">Password</label><input id="cs-pw" class="form-input" type="password" required minlength="8" /></div>
+          <div id="cs-status" class="hidden"></div>
+          <button type="submit" class="btn btn-primary w-full">Create User</button>
+        </form>
+      `);
+    }
+
+    async function submitCreateStaff(e) {
+      e.preventDefault();
+      try {
+        await staffApiPost('createStaffUser', {
+          email:       document.getElementById('cs-email').value.trim(),
+          displayName: document.getElementById('cs-name').value.trim(),
+          role:        document.getElementById('cs-role').value,
+          password:    document.getElementById('cs-pw').value,
+        });
+        closeModal();
+        setGlobalStatus('Staff user created.', 'success');
+        loadStaffUsers();
+      } catch (err) {
+        const el = document.getElementById('cs-status');
+        el.className = 'status-bar status-error'; el.textContent = staffApiErrorMessage(err); el.classList.remove('hidden');
+      }
+    }
+
+    function openEditStaffModal(user) {
+      openModal('Edit Staff User: ' + (user.displayName || user.email), `
+        <form id="edit-staff-form" class="space-y-3" onsubmit="submitEditStaff(event,'${esc(user.staffUserId)}')">
+          <div><label class="form-label">Display Name</label><input id="es-name" class="form-input" value="${esc(user.displayName)}" /></div>
+          <div><label class="form-label">Role</label>
+            <select id="es-role" class="form-input">
+              <option value="me_officer" ${user.role==='me_officer'?'selected':''}>M&E Officer</option>
+              <option value="partnerships" ${user.role==='partnerships'?'selected':''}>Partnerships</option>
+              <option value="recruitment" ${user.role==='recruitment'?'selected':''}>Recruitment</option>
+              <option value="youth_engagement" ${user.role==='youth_engagement'?'selected':''}>Youth Engagement</option>
+              <option value="it_admin" ${user.role==='it_admin'?'selected':''}>IT Admin</option>
+            </select>
+          </div>
+          <div><label class="form-label">Status</label>
+            <select id="es-status" class="form-input">
+              <option value="active" ${user.status==='active'?'selected':''}>Active</option>
+              <option value="inactive" ${user.status==='inactive'?'selected':''}>Inactive</option>
+            </select>
+          </div>
+          <div><label class="form-label">Reason</label><input id="es-reason" class="form-input" required placeholder="Reason for change" /></div>
+          <div id="es-status-msg" class="hidden"></div>
+          <button type="submit" class="btn btn-primary w-full">Save Changes</button>
+        </form>
+      `);
+    }
+
+    async function submitEditStaff(e, staffUserId) {
+      e.preventDefault();
+      try {
+        await staffApiPost('updateStaffUser', {
+          staffUserId,
+          displayName: document.getElementById('es-name').value.trim(),
+          role:        document.getElementById('es-role').value,
+          status:      document.getElementById('es-status').value,
+          reason:      document.getElementById('es-reason').value.trim(),
+        });
+        closeModal();
+        setGlobalStatus('Staff user updated.', 'success');
+        loadStaffUsers();
+      } catch (err) {
+        const el = document.getElementById('es-status-msg');
+        el.className = 'status-bar status-error'; el.textContent = staffApiErrorMessage(err); el.classList.remove('hidden');
+      }
+    }
+
+    // ─── SYSTEM CONFIG ─────────────────────────────────────────────────────────
+
+    async function loadSystemConfig() {
+      const el = document.getElementById('config-list');
+      try {
+        const data = await staffApiPost('getSystemConfig', {});
+        const cfg  = data.config || data;
+        el.innerHTML = Object.entries(cfg).map(([k, v]) => `
+          <div class="flex items-start gap-3 py-1.5 border-b border-gray-100 last:border-0">
+            <span class="font-mono text-xs text-gray-500 w-56 flex-shrink-0 pt-0.5">${esc(k)}</span>
+            <span class="text-sm text-gray-800 flex-1 break-all">${esc(String(v))}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        el.innerHTML = `<p class="text-red-500 text-sm">${staffApiErrorMessage(err)}</p>`;
+      }
+    }
+
+    // ─── DATA QUALITY ──────────────────────────────────────────────────────────
+
+    async function loadDqIssues() {
+      const tbody  = document.getElementById('dq-tbody');
+      const status = document.getElementById('dq-filter-status').value;
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';
+      try {
+        const data = await staffApiPost('listDataQualityIssues', { status });
+        const rows = data.issues || [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">No issues found.</td></tr>';
+          return;
+        }
+        const SEV_BADGE = { critical:'badge-red', high:'badge-yellow', medium:'badge-blue', low:'badge-gray' };
+        tbody.innerHTML = rows.map(i => `
+          <tr>
+            <td class="font-mono text-xs">${esc(i.participantId)}</td>
+            <td class="text-xs">${esc(i.issueType)}</td>
+            <td><span class="badge ${SEV_BADGE[i.severity]||'badge-gray'}">${esc(i.severity)}</span></td>
+            <td class="text-xs text-gray-500">${esc(i.fieldName)}</td>
+            <td class="text-xs text-gray-400">${i.detectedAt ? new Date(i.detectedAt).toLocaleDateString() : '—'}</td>
+            <td><button class="text-sm text-blue-600 underline" onclick='openResolveDqModal(${JSON.stringify(i)})'>Resolve</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;
+      }
+    }
+
+    function openResolveDqModal(issue) {
+      openModal('Resolve DQ Issue', `
+        <div class="space-y-3">
+          <div class="bg-gray-50 rounded p-3 text-sm space-y-1">
+            <div><span class="text-gray-500">Participant:</span> <span class="font-mono">${esc(issue.participantId)}</span></div>
+            <div><span class="text-gray-500">Issue:</span> ${esc(issue.issueType)}</div>
+            <div><span class="text-gray-500">Field:</span> ${esc(issue.fieldName)}</div>
+            <div><span class="text-gray-500">Current:</span> ${esc(issue.currentValue)}</div>
+            ${issue.relatedParticipantId ? `<div><span class="text-gray-500">Related:</span> <span class="font-mono">${esc(issue.relatedParticipantId)}</span></div>` : ''}
+          </div>
+          <div>
+            <label class="form-label">Resolution</label>
+            <select id="dq-resolution" class="form-input">
+              <option value="mark_not_duplicate">Mark not duplicate</option>
+              <option value="fix_field">Fix field</option>
+              <option value="merge_duplicate">Merge duplicate</option>
+              <option value="request_update">Request update from participant</option>
+              <option value="accept_exception">Accept exception</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">New Status</label>
+            <select id="dq-new-status" class="form-input">
+              <option value="resolved">Resolved</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Notes</label>
+            <textarea id="dq-notes" class="form-input" rows="2" placeholder="Required for mark_not_duplicate"></textarea>
+          </div>
+          <div id="dq-resolve-status" class="hidden"></div>
+          <button class="btn btn-primary w-full" onclick="submitResolveDq('${esc(issue.issueId)}')">Resolve Issue</button>
+        </div>
+      `);
+    }
+
+    async function submitResolveDq(issueId) {
+      try {
+        await staffApiPost('resolveDataQualityIssue', {
+          issueId,
+          resolution: document.getElementById('dq-resolution').value,
+          status:     document.getElementById('dq-new-status').value,
+          notes:      document.getElementById('dq-notes').value.trim(),
+        });
+        closeModal();
+        setGlobalStatus('Issue resolved.', 'success');
+        loadDqIssues();
+      } catch (err) {
+        const el = document.getElementById('dq-resolve-status');
+        el.className = 'status-bar status-error'; el.textContent = staffApiErrorMessage(err); el.classList.remove('hidden');
+      }
+    }
+
+    async function runDqScan() {
+      setGlobalStatus('Running DQ scan…', 'info');
+      try {
+        const data = await staffApiPost('runDataQualityScan', {});
+        setGlobalStatus(`DQ scan done. Scanned: ${data.scanned}, issues created: ${data.issuesCreated}.`, 'success');
+        if (document.getElementById('section-data-quality').classList.contains('hidden') === false) loadDqIssues();
+      } catch (err) {
+        setGlobalStatus(staffApiErrorMessage(err), 'error');
+      }
+    }
+
+    // ─── AUDIT LOG ─────────────────────────────────────────────────────────────
+
+    async function loadAuditLog() {
+      const tbody = document.getElementById('audit-tbody');
+      const pid   = document.getElementById('audit-filter-pid').value.trim();
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-6">Loading…</td></tr>';
+      try {
+        const data = await staffApiPost('getAuditLog', { participantId: pid, limit: 100 });
+        const rows = data.entries || [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-6">No entries found.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(e => `
+          <tr>
+            <td class="text-xs text-gray-500">${e.timestamp ? new Date(e.timestamp).toLocaleString() : '—'}</td>
+            <td class="text-xs">${esc(e.actorId || e.actorType)}</td>
+            <td class="text-xs font-mono">${esc(e.action)}</td>
+            <td class="text-xs">${esc(e.entityType || '')} ${esc(e.entityId || '')}</td>
+            <td><span class="badge ${e.status==='success'?'badge-green':'badge-red'}">${esc(e.status)}</span></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;
+      }
+    }
+
+    // ─── PARTICIPANTS ──────────────────────────────────────────────────────────
+
+    async function searchParticipants() {
+      const q     = document.getElementById('p-search-q').value.trim();
+      const tbody = document.getElementById('p-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">Searching…</td></tr>';
+      try {
+        const data = await staffApiPost('searchParticipants', { q });
+        const rows = data.participants || [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-6">No participants found.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(p => `
+          <tr>
+            <td class="font-mono text-xs">${esc(p.participantId)}</td>
+            <td>${esc([p.firstName, p.surname].filter(Boolean).join(' ') || p.consentName)}</td>
+            <td>${esc(p.telephone)}</td>
+            <td><span class="badge badge-blue">${esc(p.currentStage)}</span></td>
+            <td><span class="badge ${p.overallStatus==='active'?'badge-green':'badge-gray'}">${esc(p.overallStatus)}</span></td>
+            <td><button class="text-sm text-blue-600 underline" onclick="viewParticipant('${esc(p.participantId)}')">View</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;
+      }
+    }
+
+    async function viewParticipant(pid) {
+      try {
+        const data = await staffApiPost('getParticipantDetail', { participantId: pid });
+        const p    = data.participant || data;
+        openModal('Participant: ' + pid, `
+          <div class="space-y-2 text-sm">
+            ${Object.entries(p).filter(([k]) => !['passwordHash','signatureFileId'].includes(k)).map(([k, v]) =>
+              v ? `<div class="flex gap-2"><span class="text-gray-400 w-44 flex-shrink-0 text-xs pt-0.5">${esc(k)}</span><span class="break-all">${esc(String(v))}</span></div>` : ''
+            ).join('')}
+            <div class="pt-3 flex gap-2">
+              <button class="btn btn-danger text-xs" onclick="mergeParticipant('${esc(p.participantId)}')">Merge / Archive</button>
+            </div>
+          </div>
+        `);
+      } catch (err) {
+        setGlobalStatus(staffApiErrorMessage(err), 'error');
+      }
+    }
+
+    function mergeParticipant(survivingId) {
+      openModal('Merge Duplicate', `
+        <div class="space-y-3">
+          <p class="text-sm text-gray-600">This marks the other participant as a duplicate and keeps all data under the surviving participant.</p>
+          <div><label class="form-label">Surviving Participant ID</label><input class="form-input text-sm" value="${esc(survivingId)}" readonly /></div>
+          <div><label class="form-label">Duplicate Participant ID (to be merged away)</label><input id="merge-dup-id" class="form-input text-sm" required /></div>
+          <div><label class="form-label">Reason</label><textarea id="merge-reason" class="form-input" rows="2" required></textarea></div>
+          <div id="merge-status" class="hidden"></div>
+          <button class="btn btn-danger w-full" onclick="submitMerge('${esc(survivingId)}')">Confirm Merge</button>
+        </div>
+      `);
+    }
+
+    async function submitMerge(survivingId) {
+      try {
+        await staffApiPost('mergeDuplicateParticipants', {
+          survivingParticipantId: survivingId,
+          mergedParticipantId:    document.getElementById('merge-dup-id').value.trim(),
+          reason:                 document.getElementById('merge-reason').value.trim(),
+        });
+        closeModal();
+        setGlobalStatus('Participants merged.', 'success');
+      } catch (err) {
+        const el = document.getElementById('merge-status');
+        el.className = 'status-bar status-error'; el.textContent = staffApiErrorMessage(err); el.classList.remove('hidden');
+      }
+    }
+
+    // ─── BOOTSTRAP TOOLS ───────────────────────────────────────────────────────
+
+    async function runBootstrap() {
+      const el = document.getElementById('bootstrap-result');
+      el.className = 'status-bar status-info mt-2'; el.textContent = 'Running…'; el.classList.remove('hidden');
+      try {
+        const data = await staffApiPost('runBootstrap', {});
+        el.className = 'status-bar status-success mt-2';
+        el.textContent = data.message || JSON.stringify(data);
+      } catch (err) {
+        el.className = 'status-bar status-error mt-2'; el.textContent = staffApiErrorMessage(err);
+      }
+    }
+
+    async function installDqTrigger() {
+      const el = document.getElementById('trigger-result');
+      el.className = 'status-bar status-info mt-2'; el.textContent = 'Installing…'; el.classList.remove('hidden');
+      try {
+        const data = await staffApiPost('installDqTrigger', {});
+        el.className = 'status-bar status-success mt-2';
+        el.textContent = 'DQ trigger installed. Fires every ' + (data.intervalHours || 1) + ' hour(s).';
+      } catch (err) {
+        el.className = 'status-bar status-error mt-2'; el.textContent = staffApiErrorMessage(err);
+      }
+    }
+
+    async function bootstrapAdmin(e) {
+      e.preventDefault();
+      const el = document.getElementById('ba-result');
+      try {
+        await staffApiPost('bootstrapFirstAdmin', {
+          email:       document.getElementById('ba-email').value.trim(),
+          password:    document.getElementById('ba-pw').value,
+          displayName: document.getElementById('ba-name').value.trim(),
+        });
+        el.className = 'status-bar status-success mt-2'; el.textContent = 'First admin bootstrapped successfully.';
+        el.classList.remove('hidden');
+      } catch (err) {
+        el.className = 'status-bar status-error mt-2'; el.textContent = staffApiErrorMessage(err);
+        el.classList.remove('hidden');
+      }
+    }
+
+    // ─── MODAL ─────────────────────────────────────────────────────────────────
+
+    function openModal(title, bodyHtml) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').innerHTML    = bodyHtml;
+      document.getElementById('modal-bg').classList.remove('hidden');
+    }
+    function closeModal() { document.getElementById('modal-bg').classList.add('hidden'); }
+    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target.id === 'modal-bg') closeModal(); });
+
+    // ─── UTILS ─────────────────────────────────────────────────────────────────
+
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ─── ENTRY POINT ───────────────────────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (isStaffAuthenticated()) {
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        initDashboard();
+      } else {
+        showLoginScreen();
+      }
+    });
+  </script>
+</body>
+</html>

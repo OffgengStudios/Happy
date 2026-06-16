@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAPPY — Youth Engagement Dashboard</title>
+  <meta name="api-endpoint" content="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden{display:none!important} .nav-link{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.375rem;cursor:pointer;font-size:.875rem;color:#d1d5db} .nav-link:hover,.nav-link.active{background:#1f2937;color:#fff} .card{background:#fff;border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1.25rem} .btn{padding:.5rem 1rem;border-radius:.375rem;font-weight:600;font-size:.875rem;cursor:pointer} .btn-primary{background:#16a34a;color:#fff} .btn-primary:hover{background:#15803d} .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db} .btn-danger{background:#dc2626;color:#fff} .form-input{width:100%;border:1px solid #d1d5db;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem} .form-label{display:block;font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em} .badge{display:inline-block;padding:.125rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:600} .badge-green{background:#dcfce7;color:#15803d} .badge-red{background:#fee2e2;color:#b91c1c} .badge-yellow{background:#fef9c3;color:#854d0e} .badge-blue{background:#dbeafe;color:#1d4ed8} .badge-gray{background:#f3f4f6;color:#374151} .status-bar{padding:.5rem .75rem;border-radius:.375rem;font-size:.875rem;margin-top:.5rem} .status-error{background:#fef2f2;color:#991b1b} .status-success{background:#f0fdf4;color:#15803d} .status-info{background:#eff6ff;color:#1e40af} table{width:100%;border-collapse:collapse;font-size:.875rem} th{text-align:left;padding:.5rem .75rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600} td{padding:.5rem .75rem;border-bottom:1px solid #f3f4f6} tr:hover td{background:#f9fafb} .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center} .modal{background:#fff;border-radius:.75rem;padding:1.5rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+</head>
+<body class="min-h-screen">
+  <div id="login-overlay" class="hk-login">
+    <div class="hk-login-card">
+      <div class="hk-logo mb-4">HK</div>
+      <h1 class="text-xl font-bold mb-1">Youth Engagement</h1>
+      <p class="text-sm text-gray-500 mb-6">Participant Support &amp; Outreach</p>
+      <div id="login-msg" class="status-bar status-error hidden mb-4"></div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div><label class="form-label">Email</label><input id="login-email" class="form-input" type="email" required /></div>
+        <div><label class="form-label">Password</label><input id="login-pw" class="form-input" type="password" required /></div>
+        <button type="submit" id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-bg" class="modal-bg hidden"><div id="modal" class="modal"><div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="font-bold"></h3><button onclick="closeModal()" class="text-gray-400 text-xl">&times;</button></div><div id="modal-body"></div></div></div>
+
+  <div id="app" class="hidden flex h-screen overflow-hidden">
+    <aside class="w-52 hk-sidebar flex-shrink-0 flex flex-col">
+      <div class="px-4 py-4 border-b border-white/15 flex items-center gap-2">
+        <div class="hk-logo" style="width:34px;height:34px;font-size:.8rem;">HK</div>
+        <div><p class="text-white font-bold text-sm leading-tight">Youth Engagement</p><p id="sidebar-user" class="text-white/60 text-xs truncate"></p></div>
+      </div>
+      <nav class="flex-1 px-2 py-3 space-y-1">
+        <a class="nav-link" onclick="showSection('participants')">Participant Search</a>
+        <a class="nav-link" onclick="showSection('register')">Register Participant</a>
+        <a class="nav-link" onclick="showSection('tokens')">Continuation Links</a>
+        <a class="nav-link" onclick="showSection('capacity')">Capacity Building</a>
+        <a class="nav-link" onclick="showSection('withdraw')">Withdraw Consent</a>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/15"><button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button></div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="bg-white border-b px-6 py-3 flex items-center justify-between">
+        <h2 id="section-title" class="font-semibold text-gray-800">Participant Search</h2>
+        <span id="header-user" class="text-sm text-gray-500"></span>
+      </header>
+      <div id="global-status" class="status-bar hidden mx-6 mt-3"></div>
+      <main class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+        <!-- PARTICIPANT SEARCH -->
+        <section id="section-participants" class="space-y-3">
+          <div class="flex gap-2">
+            <input id="p-search-q" class="form-input flex-1 text-sm py-1.5" placeholder="Search by name, phone, ID…" />
+            <button class="btn btn-primary text-sm" onclick="searchParticipants()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>HAPPY ID</th><th>Name</th><th>Phone</th><th>Stage</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="p-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Enter a search term above.</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- REGISTER PARTICIPANT (staff-side consent) -->
+        <section id="section-register" class="hidden space-y-3">
+          <div class="card">
+            <p class="font-semibold mb-3">Register New Participant (Staff-Assisted)</p>
+            <form id="reg-form" class="space-y-4" onsubmit="submitRegistration(event)">
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="form-label">Venue</label><input id="r-venue" class="form-input" required /></div>
+                <div><label class="form-label">Phone</label><input id="r-phone" class="form-input" type="tel" required inputmode="numeric" /></div>
+              </div>
+              <div><label class="form-label">Full Name (consent)</label><input id="r-name" class="form-input" required /></div>
+              <div><label class="form-label">Email (optional)</label><input id="r-email" class="form-input" type="email" /></div>
+              <div><label class="form-label">Preferred Language</label>
+                <select id="r-lang" class="form-input"><option value="en">English</option><option value="tw">Twi</option><option value="ga">Ga</option><option value="ee">Ewe</option><option value="ha">Hausa</option></select></div>
+              <label class="flex items-start gap-3 cursor-pointer"><input id="r-accepted" type="checkbox" class="mt-1 h-4 w-4 accent-green-600" required /><span class="text-sm text-gray-700">I confirm the participant has given their consent to participate in the HAPPY Programme.</span></label>
+              <div id="reg-status" class="hidden"></div>
+              <button type="submit" class="btn btn-primary w-full">Register Participant</button>
+            </form>
+            <div id="reg-result" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg space-y-2">
+              <p class="text-sm font-semibold text-green-800">Participant registered!</p>
+              <p class="text-sm text-green-700">HAPPY ID: <span id="reg-pid" class="font-mono font-bold"></span></p>
+              <p class="text-sm text-green-700">Registration link:</p>
+              <a id="reg-link" href="#" target="_blank" class="text-sm text-blue-600 underline break-all"></a>
+              <button class="btn btn-secondary text-xs" onclick="copyRegLink()">Copy Link</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONTINUATION TOKENS -->
+        <section id="section-tokens" class="hidden space-y-3">
+          <div class="card">
+            <p class="font-semibold mb-3">Create Continuation Link</p>
+            <p class="text-sm text-gray-500 mb-4">Send participants a secure link to continue their registration from any device.</p>
+            <form id="token-form" class="space-y-3" onsubmit="createToken(event)">
+              <div><label class="form-label">Participant ID or Phone</label><input id="tk-pid" class="form-input" required placeholder="HAPPY-2026-000001 or 0244000000" /></div>
+              <div><label class="form-label">Token Purpose</label>
+                <select id="tk-purpose" class="form-input">
+                  <option value="registration">Registration continuation</option>
+                  <option value="cv_upload">CV upload</option>
+                  <option value="whatsapp_continuation">WhatsApp continuation</option>
+                </select>
+              </div>
+              <div id="token-status" class="hidden"></div>
+              <button type="submit" class="btn btn-primary w-full">Generate Link</button>
+            </form>
+            <div id="token-result" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+              <p class="text-sm font-semibold text-blue-800">Continuation link created</p>
+              <a id="token-link" href="#" target="_blank" class="text-sm text-blue-600 underline break-all"></a>
+              <button class="btn btn-secondary text-xs" onclick="copyTokenLink()">Copy Link</button>
+              <p class="text-xs text-gray-500">Valid for <span id="token-days"></span> days.</p>
+            </div>
+          </div>
+          <div class="card">
+            <p class="font-semibold mb-3">Recent Tokens</p>
+            <p class="text-sm text-gray-500">Search for a participant to view their active tokens.</p>
+          </div>
+        </section>
+
+        <!-- CAPACITY BUILDING -->
+        <section id="section-capacity" class="hidden space-y-3">
+          <div class="card">
+            <p class="font-semibold mb-3">Record Capacity Building</p>
+            <form id="cb-form" class="space-y-3" onsubmit="submitCapacity(event)">
+              <div><label class="form-label">Participant ID</label><input id="cb-pid" class="form-input" required /></div>
+              <div><label class="form-label">Trained by Partner?</label>
+                <select id="cb-trained" class="form-input" onchange="toggleCapacityFields()"><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+              <div id="cb-fields" class="hidden space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="form-label">Start Date</label><input id="cb-start" class="form-input" type="date" /></div>
+                  <div><label class="form-label">End Date</label><input id="cb-end" class="form-input" type="date" /></div>
+                </div>
+                <div><label class="form-label">Training Partner</label><input id="cb-partner" class="form-input" /></div>
+                <div><label class="form-label">Training Mode</label>
+                  <select id="cb-mode" class="form-input"><option>In-person</option><option>Virtual</option><option>Blended</option></select></div>
+                <div><label class="form-label">Completion Status</label>
+                  <select id="cb-completion" class="form-input"><option>Completed</option><option>In Progress</option><option>Did not complete</option></select></div>
+                <div><label class="form-label">Digital Skills (comma-separated)</label><input id="cb-skills" class="form-input" /></div>
+              </div>
+              <div id="cb-status" class="hidden"></div>
+              <button type="submit" class="btn btn-primary w-full">Save Capacity Building</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- WITHDRAW CONSENT -->
+        <section id="section-withdraw" class="hidden space-y-3">
+          <div class="card">
+            <div class="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <p class="text-sm text-red-700">Withdrawing consent is irreversible. The participant will be removed from all active programme processes.</p>
+            </div>
+            <p class="font-semibold mb-3">Withdraw Consent</p>
+            <form id="wd-form" class="space-y-3" onsubmit="submitWithdrawal(event)">
+              <div><label class="form-label">Participant ID</label><input id="wd-pid" class="form-input" required /></div>
+              <div><label class="form-label">Reason for Withdrawal</label><textarea id="wd-reason" class="form-input" rows="3" required placeholder="Required for staff-initiated withdrawals"></textarea></div>
+              <div id="wd-status" class="hidden"></div>
+              <button type="submit" class="btn btn-danger w-full">Withdraw Consent</button>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../shared/config.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/permissions.js"></script>
+  <script src="../shared/a11y.js"></script>
+  <script>
+    function showLoginScreen(msg){document.getElementById('app').classList.add('hidden');document.getElementById('login-overlay').classList.remove('hidden');if(msg){const el=document.getElementById('login-msg');el.textContent=msg;el.classList.remove('hidden');}}
+    async function handleLogin(e){e.preventDefault();const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in…';try{await staffLogin(document.getElementById('login-email').value.trim(),document.getElementById('login-pw').value);document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}catch(err){const el=document.getElementById('login-msg');el.textContent=staffApiErrorMessage(err);el.className='status-bar status-error mb-4';el.classList.remove('hidden');}finally{btn.disabled=false;btn.textContent='Sign In';}}
+    async function handleLogout(){await staffLogout();showLoginScreen();}
+    function initDashboard(){const user=staffGetCurrentUser();if(!user)return showLoginScreen();document.getElementById('sidebar-user').textContent=user.displayName||user.email;document.getElementById('header-user').textContent=(user.displayName||user.email)+' · Youth Engagement';showSection('participants');}
+    const TITLES={'participants':'Participant Search','register':'Register Participant','tokens':'Continuation Links','capacity':'Capacity Building','withdraw':'Withdraw Consent'};
+    function showSection(id){document.querySelectorAll('section[id^="section-"]').forEach(s=>s.classList.add('hidden'));document.getElementById('section-'+id).classList.remove('hidden');document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));document.querySelectorAll('.nav-link').forEach(l=>{if(l.getAttribute('onclick')&&l.getAttribute('onclick').includes("'"+id+"'"))l.classList.add('active');});document.getElementById('section-title').textContent=TITLES[id]||id;}
+    function setGlobalStatus(msg,type){const el=document.getElementById('global-status');if(!msg){el.classList.add('hidden');return;}el.className='status-bar status-'+(type||'info')+' mx-6 mt-3';el.textContent=msg;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000);}
+
+    async function searchParticipants(){const q=document.getElementById('p-search-q').value.trim();const tbody=document.getElementById('p-tbody');tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Searching…</td></tr>';try{const data=await staffApiPost('searchParticipants',{q});const rows=data.participants||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No results.</td></tr>';return;}tbody.innerHTML=rows.map(p=>`<tr><td class="font-mono text-xs">${esc(p.participantId)}</td><td>${esc([p.firstName,p.surname].filter(Boolean).join(' ')||p.consentName)}</td><td class="text-xs">${esc(p.telephone||p.consentPhone)}</td><td><span class="badge badge-blue">${esc(p.currentStage)}</span></td><td><span class="badge ${p.overallStatus==='active'?'badge-green':'badge-gray'}">${esc(p.overallStatus)}</span></td><td class="flex gap-2"><button class="text-xs text-blue-600 underline" onclick="prefillToken('${esc(p.participantId)}')">Token</button><button class="text-xs text-red-600 underline" onclick="prefillWithdraw('${esc(p.participantId)}')">Withdraw</button></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function prefillToken(pid){document.getElementById('tk-pid').value=pid;showSection('tokens');}
+    function prefillWithdraw(pid){document.getElementById('wd-pid').value=pid;showSection('withdraw');}
+
+    async function submitRegistration(e){
+      e.preventDefault();
+      const btn=e.target.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Registering…';
+      const regResult=document.getElementById('reg-result');regResult.classList.add('hidden');
+      const regStatus=document.getElementById('reg-status');regStatus.classList.add('hidden');
+      try {
+        const data=await staffApiPost('initConsent',{venue:document.getElementById('r-venue').value.trim(),consentName:document.getElementById('r-name').value.trim(),phone:document.getElementById('r-phone').value.trim(),email:document.getElementById('r-email').value.trim()||null,language:document.getElementById('r-lang').value,accepted:document.getElementById('r-accepted').checked,registeredByStaff:true});
+        document.getElementById('reg-pid').textContent=data.participantId||'—';
+        const link=data.registrationUrl||'';
+        document.getElementById('reg-link').href=link;document.getElementById('reg-link').textContent=link;
+        regResult.classList.remove('hidden');
+        e.target.reset();
+      } catch(err) { regStatus.className='status-bar status-error';regStatus.textContent=staffApiErrorMessage(err);regStatus.classList.remove('hidden'); }
+      finally{btn.disabled=false;btn.textContent='Register Participant';}
+    }
+    function copyRegLink(){navigator.clipboard.writeText(document.getElementById('reg-link').href).then(()=>setGlobalStatus('Link copied.','success'));}
+
+    async function createToken(e){
+      e.preventDefault();
+      const btn=e.target.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Creating…';
+      document.getElementById('token-result').classList.add('hidden');
+      document.getElementById('token-status').classList.add('hidden');
+      try {
+        const data=await staffApiPost('staffCreateContinuationToken',{participantId:document.getElementById('tk-pid').value.trim(),purpose:document.getElementById('tk-purpose').value});
+        const link=data.registrationUrl||data.tokenUrl||'';
+        document.getElementById('token-link').href=link;document.getElementById('token-link').textContent=link;
+        document.getElementById('token-days').textContent=data.expiresInDays||'—';
+        document.getElementById('token-result').classList.remove('hidden');
+      } catch(err) { const el=document.getElementById('token-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden'); }
+      finally{btn.disabled=false;btn.textContent='Generate Link';}
+    }
+    function copyTokenLink(){navigator.clipboard.writeText(document.getElementById('token-link').href).then(()=>setGlobalStatus('Link copied.','success'));}
+
+    function toggleCapacityFields(){document.getElementById('cb-fields').classList.toggle('hidden',document.getElementById('cb-trained').value!=='Yes');}
+
+    async function submitCapacity(e){
+      e.preventDefault();
+      const pid=document.getElementById('cb-pid').value.trim();
+      try {
+        await staffApiPost('submitCapacityBuilding',{participantId:pid,trainedByPartner:document.getElementById('cb-trained').value,trainingStartDate:document.getElementById('cb-start').value,trainingEndDate:document.getElementById('cb-end').value,trainingPartner:document.getElementById('cb-partner').value.trim(),trainingMode:document.getElementById('cb-mode').value,completionStatus:document.getElementById('cb-completion').value,digitalSkills:document.getElementById('cb-skills').value.trim()});
+        setGlobalStatus('Capacity building saved for '+pid,'success');
+        e.target.reset();
+        document.getElementById('cb-fields').classList.add('hidden');
+      } catch(err) { const el=document.getElementById('cb-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden'); }
+    }
+
+    async function submitWithdrawal(e){
+      e.preventDefault();
+      const pid=document.getElementById('wd-pid').value.trim();
+      const reason=document.getElementById('wd-reason').value.trim();
+      if (!confirm('Are you sure you want to withdraw consent for '+pid+'? This cannot be undone.')) return;
+      try {
+        await staffApiPost('withdrawConsent',{participantId:pid,reason});
+        setGlobalStatus('Consent withdrawn for '+pid,'success');
+        e.target.reset();
+      } catch(err) { const el=document.getElementById('wd-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden'); }
+    }
+
+    function openModal(title,bodyHtml){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=bodyHtml;document.getElementById('modal-bg').classList.remove('hidden');}
+    function closeModal(){document.getElementById('modal-bg').classList.add('hidden');}
+    document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target.id==='modal-bg')closeModal();});
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    document.addEventListener('DOMContentLoaded',()=>{if(isStaffAuthenticated()){document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}else showLoginScreen();});
+  </script>
+</body>
+</html>

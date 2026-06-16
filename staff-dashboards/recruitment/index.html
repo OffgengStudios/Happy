@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAPPY — Recruitment Dashboard</title>
+  <meta name="api-endpoint" content="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden{display:none!important} .nav-link{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.375rem;cursor:pointer;font-size:.875rem;color:#d1d5db} .nav-link:hover,.nav-link.active{background:#1f2937;color:#fff} .card{background:#fff;border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1.25rem} .btn{padding:.5rem 1rem;border-radius:.375rem;font-weight:600;font-size:.875rem;cursor:pointer} .btn-primary{background:#16a34a;color:#fff} .btn-primary:hover{background:#15803d} .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db} .form-input{width:100%;border:1px solid #d1d5db;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem} .form-label{display:block;font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em} .badge{display:inline-block;padding:.125rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:600} .badge-green{background:#dcfce7;color:#15803d} .badge-red{background:#fee2e2;color:#b91c1c} .badge-yellow{background:#fef9c3;color:#854d0e} .badge-blue{background:#dbeafe;color:#1d4ed8} .badge-gray{background:#f3f4f6;color:#374151} .status-bar{padding:.5rem .75rem;border-radius:.375rem;font-size:.875rem;margin-top:.5rem} .status-error{background:#fef2f2;color:#991b1b} .status-success{background:#f0fdf4;color:#15803d} .status-info{background:#eff6ff;color:#1e40af} table{width:100%;border-collapse:collapse;font-size:.875rem} th{text-align:left;padding:.5rem .75rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600} td{padding:.5rem .75rem;border-bottom:1px solid #f3f4f6} tr:hover td{background:#f9fafb} .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center} .modal{background:#fff;border-radius:.75rem;padding:1.5rem;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+</head>
+<body class="min-h-screen">
+  <div id="login-overlay" class="hk-login">
+    <div class="hk-login-card">
+      <div class="hk-logo mb-4">HK</div>
+      <h1 class="text-xl font-bold mb-1">Recruitment Dashboard</h1>
+      <p class="text-sm text-gray-500 mb-6">CV Review &amp; Job Matching</p>
+      <div id="login-msg" class="status-bar status-error hidden mb-4"></div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div><label class="form-label">Email</label><input id="login-email" class="form-input" type="email" required /></div>
+        <div><label class="form-label">Password</label><input id="login-pw" class="form-input" type="password" required /></div>
+        <button type="submit" id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-bg" class="modal-bg hidden"><div id="modal" class="modal"><div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="font-bold"></h3><button onclick="closeModal()" class="text-gray-400 text-xl">&times;</button></div><div id="modal-body"></div></div></div>
+
+  <div id="app" class="hidden flex h-screen overflow-hidden">
+    <aside class="w-52 hk-sidebar flex-shrink-0 flex flex-col">
+      <div class="px-4 py-4 border-b border-white/15 flex items-center gap-2">
+        <div class="hk-logo" style="width:34px;height:34px;font-size:.8rem;">HK</div>
+        <div><p class="text-white font-bold text-sm leading-tight">Recruitment</p><p id="sidebar-user" class="text-white/60 text-xs truncate"></p></div>
+      </div>
+      <nav class="flex-1 px-2 py-3 space-y-1">
+        <a class="nav-link" onclick="showSection('cv-review')">CV Review Queue</a>
+        <a class="nav-link" onclick="showSection('matching')">Job Matching</a>
+        <a class="nav-link" onclick="showSection('placements')">Placements</a>
+        <a class="nav-link" onclick="showSection('participants')">Participants</a>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/15"><button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button></div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="bg-white border-b px-6 py-3 flex items-center justify-between">
+        <h2 id="section-title" class="font-semibold text-gray-800">CV Review Queue</h2>
+        <span id="header-user" class="text-sm text-gray-500"></span>
+      </header>
+      <div id="global-status" class="status-bar hidden mx-6 mt-3"></div>
+      <main class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+        <!-- CV REVIEW -->
+        <section id="section-cv-review" class="space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">CV Review Queue</p>
+            <select id="cv-filter-status" class="form-input w-36 text-sm py-1" onchange="loadCvQueue()">
+              <option value="uploaded">Uploaded</option>
+              <option value="needs_review">Needs Review</option>
+              <option value="">All</option>
+            </select>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>CV ID</th><th>Participant</th><th>File</th><th>Upload Source</th><th>Parser Status</th><th></th></tr></thead>
+            <tbody id="cv-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- JOB MATCHING -->
+        <section id="section-matching" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Job Matching</p>
+            <button class="btn btn-primary text-sm" onclick="openRunMatchModal()">Run Match</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="m-pid" class="form-input flex-1 text-sm py-1.5" placeholder="Participant ID to search matches for…" />
+            <button class="btn btn-secondary text-sm" onclick="loadMatches()">Load Matches</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Match ID</th><th>Participant</th><th>Job</th><th>Score</th><th>Decision</th><th></th></tr></thead>
+            <tbody id="matches-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Enter a participant ID above.</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- PLACEMENTS -->
+        <section id="section-placements" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Placements</p>
+            <button class="btn btn-primary text-sm" onclick="openPlacementModal()">+ Record Placement</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Placement ID</th><th>Participant</th><th>Employer</th><th>Role</th><th>Start Date</th><th>Status</th></tr></thead>
+            <tbody id="placements-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- PARTICIPANTS -->
+        <section id="section-participants" class="hidden space-y-3">
+          <div class="flex gap-2">
+            <input id="p-search-q" class="form-input flex-1 text-sm py-1.5" placeholder="Search participants…" />
+            <button class="btn btn-primary text-sm" onclick="searchParticipants()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>HAPPY ID</th><th>Name</th><th>Stage</th><th>CV Status</th><th></th></tr></thead>
+            <tbody id="p-tbody"><tr><td colspan="5" class="text-center text-gray-400 py-6">Enter a search term.</td></tr></tbody></table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../shared/config.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/permissions.js"></script>
+  <script src="../shared/a11y.js"></script>
+  <script>
+    function showLoginScreen(msg){document.getElementById('app').classList.add('hidden');document.getElementById('login-overlay').classList.remove('hidden');if(msg){const el=document.getElementById('login-msg');el.textContent=msg;el.classList.remove('hidden');}}
+    async function handleLogin(e){e.preventDefault();const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in…';try{await staffLogin(document.getElementById('login-email').value.trim(),document.getElementById('login-pw').value);document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}catch(err){const el=document.getElementById('login-msg');el.textContent=staffApiErrorMessage(err);el.className='status-bar status-error mb-4';el.classList.remove('hidden');}finally{btn.disabled=false;btn.textContent='Sign In';}}
+    async function handleLogout(){await staffLogout();showLoginScreen();}
+    function initDashboard(){const user=staffGetCurrentUser();if(!user)return showLoginScreen();document.getElementById('sidebar-user').textContent=user.displayName||user.email;document.getElementById('header-user').textContent=(user.displayName||user.email)+' · Recruitment';showSection('cv-review');loadCvQueue();}
+    const TITLES={'cv-review':'CV Review Queue','matching':'Job Matching','placements':'Placements','participants':'Participants'};
+    function showSection(id){document.querySelectorAll('section[id^="section-"]').forEach(s=>s.classList.add('hidden'));document.getElementById('section-'+id).classList.remove('hidden');document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));document.querySelectorAll('.nav-link').forEach(l=>{if(l.getAttribute('onclick')&&l.getAttribute('onclick').includes("'"+id+"'"))l.classList.add('active');});document.getElementById('section-title').textContent=TITLES[id]||id;if(id==='placements')loadPlacements();}
+    function setGlobalStatus(msg,type){const el=document.getElementById('global-status');if(!msg){el.classList.add('hidden');return;}el.className='status-bar status-'+(type||'info')+' mx-6 mt-3';el.textContent=msg;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000);}
+
+    async function loadCvQueue(){const tbody=document.getElementById('cv-tbody');const status=document.getElementById('cv-filter-status').value;tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';try{const data=await staffApiPost('searchCvRecords',{status,limit:100});const rows=data.cvRecords||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No CVs in queue.</td></tr>';return;}const SEV={uploaded:'badge-blue',parsed:'badge-green',needs_review:'badge-yellow',failed:'badge-red',deferred:'badge-gray'};tbody.innerHTML=rows.map(cv=>`<tr><td class="font-mono text-xs">${esc(cv.cvRecordId)}</td><td class="font-mono text-xs">${esc(cv.participantId)}</td><td class="text-xs truncate max-w-xs">${esc(cv.originalFileName)}</td><td class="text-xs">${esc(cv.uploadSource)}</td><td><span class="badge ${SEV[cv.parserStatus]||'badge-gray'}">${esc(cv.parserStatus||cv.uploadStatus)}</span></td><td><button class="text-sm text-blue-600 underline" onclick='openCvReviewModal(${JSON.stringify(cv)})'>Review</button></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openCvReviewModal(cv){openModal('Review CV: '+cv.cvRecordId,`<div class="space-y-3"><div class="bg-gray-50 rounded p-3 text-sm space-y-1"><div><b>Participant:</b> <span class="font-mono">${esc(cv.participantId)}</span></div><div><b>File:</b> ${esc(cv.originalFileName)}</div><div><b>Parser Status:</b> ${esc(cv.parserStatus||'—')}</div>${cv.confidence?`<div><b>Confidence:</b> ${(parseFloat(cv.confidence)*100).toFixed(0)}%</div>`:''}${cv.parsedName?`<div><b>Parsed Name:</b> ${esc(cv.parsedName)}</div>`:''}${cv.parsedEmail?`<div><b>Parsed Email:</b> ${esc(cv.parsedEmail)}</div>`:''}${cv.jobCategory?`<div><b>Category:</b> ${esc(cv.jobCategory)} / ${esc(cv.jobSubcategory)}</div>`:''}</div>${cv.driveFileId?`<a href="https://drive.google.com/file/d/${esc(cv.driveFileId)}/view" target="_blank" class="text-sm text-blue-600 underline">Open CV in Drive</a>`:''}<div><label class="form-label">Review Decision</label><select id="cv-review-decision" class="form-input"><option value="approved">Approve parsed result</option><option value="needs_correction">Needs correction</option><option value="reject_replace">Reject — request replacement</option></select></div><div><label class="form-label">Notes</label><textarea id="cv-review-notes" class="form-input" rows="2"></textarea></div><div id="cv-review-status" class="hidden"></div><button class="btn btn-primary w-full" onclick="submitCvReview('${esc(cv.cvRecordId)}','${esc(cv.participantId)}')">Save Review</button></div>`);}
+
+    async function submitCvReview(cvRecordId,participantId){try{await staffApiPost('reviewCvResult',{cvRecordId,participantId,decision:document.getElementById('cv-review-decision').value,notes:document.getElementById('cv-review-notes').value.trim()});closeModal();setGlobalStatus('CV review saved.','success');loadCvQueue();}catch(err){const el=document.getElementById('cv-review-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    function openRunMatchModal(){openModal('Run Job Match',`<form class="space-y-3" onsubmit="submitRunMatch(event)"><div><label class="form-label">Participant ID</label><input id="rm-pid" class="form-input" required /></div><div><label class="form-label">Job Opportunity ID (optional — leave blank for auto)</label><input id="rm-jobid" class="form-input" /></div><div id="rm-status" class="hidden"></div><button type="submit" class="btn btn-primary w-full">Run Match</button></form>`);}
+    async function submitRunMatch(e){e.preventDefault();try{const data=await staffApiPost('runJobMatch',{participantId:document.getElementById('rm-pid').value.trim(),jobOpportunityId:document.getElementById('rm-jobid').value.trim()||null});closeModal();setGlobalStatus('Match run complete. Matches: '+(data.matches||0),'success');document.getElementById('m-pid').value=document.getElementById('rm-pid')&&document.getElementById('rm-pid').value||'';showSection('matching');loadMatches();}catch(err){const el=document.getElementById('rm-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    async function loadMatches(){const pid=document.getElementById('m-pid').value.trim();const tbody=document.getElementById('matches-tbody');tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';try{const data=await staffApiPost('searchMatches',{participantId:pid,limit:50});const rows=data.matches||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No matches found.</td></tr>';return;}tbody.innerHTML=rows.map(m=>`<tr><td class="font-mono text-xs">${esc(m.matchId)}</td><td class="font-mono text-xs">${esc(m.participantId)}</td><td class="font-mono text-xs">${esc(m.jobOpportunityId)}</td><td><span class="badge badge-blue">${((parseFloat(m.matchScore||0))*100).toFixed(0)}%</span></td><td><span class="badge ${m.decisionStatus==='shortlisted'?'badge-green':m.decisionStatus==='rejected'?'badge-red':'badge-gray'}">${esc(m.decisionStatus||'pending')}</span></td><td><button class="text-sm text-blue-600 underline" onclick='openMatchDecisionModal(${JSON.stringify(m)})'>Decide</button></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openMatchDecisionModal(match){openModal('Match Decision',`<div class="space-y-3"><div class="bg-gray-50 rounded p-3 text-sm"><div><b>Participant:</b> <span class="font-mono">${esc(match.participantId)}</span></div><div><b>Job:</b> <span class="font-mono">${esc(match.jobOpportunityId)}</span></div><div><b>Score:</b> ${((parseFloat(match.matchScore||0))*100).toFixed(0)}%</div></div><div><label class="form-label">Decision</label><select id="md-decision" class="form-input"><option value="shortlisted">Shortlist</option><option value="rejected">Reject</option><option value="deferred">Defer</option></select></div><div><label class="form-label">Notes</label><textarea id="md-notes" class="form-input" rows="2"></textarea></div><div id="md-status" class="hidden"></div><button class="btn btn-primary w-full" onclick="submitMatchDecision('${esc(match.matchId)}')">Save Decision</button></div>`);}
+    async function submitMatchDecision(matchId){try{await staffApiPost('reviewJobMatch',{matchId,decision:document.getElementById('md-decision').value,notes:document.getElementById('md-notes').value.trim()});closeModal();setGlobalStatus('Decision saved.','success');loadMatches();}catch(err){const el=document.getElementById('md-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    async function loadPlacements(){const tbody=document.getElementById('placements-tbody');tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';try{const data=await staffApiPost('searchPlacements',{limit:100});const rows=data.placements||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No placements.</td></tr>';return;}tbody.innerHTML=rows.map(p=>`<tr><td class="font-mono text-xs">${esc(p.placementId)}</td><td class="font-mono text-xs">${esc(p.participantId)}</td><td>${esc(p.employerName||p.placedByPartner)}</td><td class="text-xs">${esc(p.jobRole)}</td><td class="text-xs">${esc(p.placementStartDate)}</td><td><span class="badge badge-blue">${esc(p.placementStatus)}</span></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openPlacementModal(){openModal('Record Placement',`<form class="space-y-3" onsubmit="submitPlacement(event)"><div><label class="form-label">Participant ID</label><input id="pl-pid" class="form-input" required /></div><div><label class="form-label">Employer</label><input id="pl-employer" class="form-input" required /></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Job Role</label><input id="pl-role" class="form-input" required /></div><div><label class="form-label">Start Date</label><input id="pl-start" class="form-input" type="date" required /></div></div><div id="pl-modal-status" class="hidden"></div><button type="submit" class="btn btn-primary w-full">Save</button></form>`);}
+    async function submitPlacement(e){e.preventDefault();try{await staffApiPost('recordPlacement',{participantId:document.getElementById('pl-pid').value.trim(),employerName:document.getElementById('pl-employer').value.trim(),jobRole:document.getElementById('pl-role').value.trim(),placementStartDate:document.getElementById('pl-start').value});closeModal();setGlobalStatus('Placement recorded.','success');loadPlacements();}catch(err){const el=document.getElementById('pl-modal-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}}
+
+    async function searchParticipants(){const q=document.getElementById('p-search-q').value.trim();const tbody=document.getElementById('p-tbody');tbody.innerHTML='<tr><td colspan="5" class="text-center text-gray-400 py-6">Searching…</td></tr>';try{const data=await staffApiPost('searchParticipants',{q,stage:'job_matching'});const rows=data.participants||[];if(!rows.length){tbody.innerHTML='<tr><td colspan="5" class="text-center text-gray-400 py-6">No results.</td></tr>';return;}tbody.innerHTML=rows.map(p=>`<tr><td class="font-mono text-xs">${esc(p.participantId)}</td><td>${esc([p.firstName,p.surname].filter(Boolean).join(' ')||p.consentName)}</td><td><span class="badge badge-blue">${esc(p.currentStage)}</span></td><td><span class="badge ${p.cvStatus==='parsed'?'badge-green':'badge-gray'}">${esc(p.cvStatus||'—')}</span></td><td><button class="text-sm text-blue-600 underline" onclick="document.getElementById('m-pid').value='${esc(p.participantId)}';showSection('matching');loadMatches()">Match</button></td></tr>`).join('');}catch(err){tbody.innerHTML=`<tr><td colspan="5" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`;}}
+
+    function openModal(title,bodyHtml){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=bodyHtml;document.getElementById('modal-bg').classList.remove('hidden');}
+    function closeModal(){document.getElementById('modal-bg').classList.add('hidden');}
+    document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target.id==='modal-bg')closeModal();});
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    document.addEventListener('DOMContentLoaded',()=>{if(isStaffAuthenticated()){document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}else showLoginScreen();});
+  </script>
+</body>
+</html>

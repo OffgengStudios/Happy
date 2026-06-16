@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HAPPY — M&E Dashboard</title>
+  <meta name="api-endpoint" content="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden{display:none!important} .nav-link{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.375rem;cursor:pointer;font-size:.875rem;color:#d1d5db} .nav-link:hover,.nav-link.active{background:#1f2937;color:#fff} .card{background:#fff;border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1.25rem} .btn{padding:.5rem 1rem;border-radius:.375rem;font-weight:600;font-size:.875rem;cursor:pointer} .btn-primary{background:#16a34a;color:#fff} .btn-primary:hover{background:#15803d} .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db} .form-input{width:100%;border:1px solid #d1d5db;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem} .form-label{display:block;font-size:.75rem;font-weight:600;color:#6b7280;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em} .badge{display:inline-block;padding:.125rem .5rem;border-radius:9999px;font-size:.75rem;font-weight:600} .badge-green{background:#dcfce7;color:#15803d} .badge-red{background:#fee2e2;color:#b91c1c} .badge-yellow{background:#fef9c3;color:#854d0e} .badge-blue{background:#dbeafe;color:#1d4ed8} .badge-gray{background:#f3f4f6;color:#374151} .status-bar{padding:.5rem .75rem;border-radius:.375rem;font-size:.875rem;margin-top:.5rem} .status-error{background:#fef2f2;color:#991b1b} .status-success{background:#f0fdf4;color:#15803d} .status-info{background:#eff6ff;color:#1e40af} table{width:100%;border-collapse:collapse;font-size:.875rem} th{text-align:left;padding:.5rem .75rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151} td{padding:.5rem .75rem;border-bottom:1px solid #f3f4f6;color:#374151} tr:hover td{background:#f9fafb} .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center} .modal{background:#fff;border-radius:.75rem;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+</head>
+<body class="min-h-screen">
+  <div id="login-overlay" class="hk-login">
+    <div class="hk-login-card">
+      <div class="hk-logo mb-4">HK</div>
+      <h1 class="text-xl font-bold mb-1">M&E Dashboard</h1>
+      <p class="text-sm text-gray-500 mb-6">Monitoring &amp; Evaluation</p>
+      <div id="login-msg" class="status-bar status-error hidden mb-4"></div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div><label class="form-label">Email</label><input id="login-email" class="form-input" type="email" required /></div>
+        <div><label class="form-label">Password</label><input id="login-pw" class="form-input" type="password" required /></div>
+        <button type="submit" id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-bg" class="modal-bg hidden"><div id="modal" class="modal"><div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="font-bold text-gray-900"></h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl">&times;</button></div><div id="modal-body"></div></div></div>
+
+  <div id="app" class="hidden flex h-screen overflow-hidden">
+    <aside class="w-52 hk-sidebar flex-shrink-0 flex flex-col">
+      <div class="px-4 py-4 border-b border-white/15 flex items-center gap-2">
+        <div class="hk-logo" style="width:34px;height:34px;font-size:.8rem;">HK</div>
+        <div><p class="text-white font-bold text-sm leading-tight">M&E Dashboard</p><p id="sidebar-user" class="text-white/60 text-xs truncate"></p></div>
+      </div>
+      <nav class="flex-1 px-2 py-3 space-y-1">
+        <a class="nav-link" onclick="showSection('participants')">Participants</a>
+        <a class="nav-link" onclick="showSection('data-quality')">Data Quality</a>
+        <a class="nav-link" onclick="showSection('outcomes')">Outcomes</a>
+        <a class="nav-link" onclick="showSection('reports')">Reports</a>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/15"><button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button></div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="bg-white border-b px-6 py-3 flex items-center justify-between">
+        <h2 id="section-title" class="font-semibold text-gray-800">Participants</h2>
+        <span id="header-user" class="text-sm text-gray-500"></span>
+      </header>
+      <div id="global-status" class="status-bar hidden mx-6 mt-3"></div>
+      <main class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+        <!-- PARTICIPANTS -->
+        <section id="section-participants" class="space-y-3">
+          <div class="flex gap-2">
+            <input id="p-search-q" class="form-input flex-1 text-sm py-1.5" placeholder="Search by name, phone, ID, stage…" />
+            <select id="p-stage-filter" class="form-input w-40 text-sm py-1.5">
+              <option value="">All stages</option>
+              <option value="consent">Consent</option>
+              <option value="participant_information">Info</option>
+              <option value="cv_upload">CV Upload</option>
+              <option value="job_matching">Matching</option>
+              <option value="job_placement">Placement</option>
+              <option value="outcome_tracking">Outcome</option>
+              <option value="completed">Completed</option>
+            </select>
+            <button class="btn btn-primary text-sm" onclick="searchParticipants()">Search</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>HAPPY ID</th><th>Name</th><th>Region</th><th>Stage</th><th>Status</th><th></th></tr></thead>
+            <tbody id="p-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Enter a search term above.</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- DATA QUALITY -->
+        <section id="section-data-quality" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Data Quality Issues</p>
+            <select id="dq-filter" class="form-input w-36 text-sm py-1" onchange="loadDqIssues()">
+              <option value="open">Open</option><option value="in_review">In Review</option><option value="">All</option>
+            </select>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Participant</th><th>Type</th><th>Severity</th><th>Field</th><th>Status</th><th></th></tr></thead>
+            <tbody id="dq-tbody"><tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- OUTCOMES -->
+        <section id="section-outcomes" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <p class="font-semibold">Outcome Tracking</p>
+            <button class="btn btn-primary text-sm" onclick="openRecordOutcomeModal()">Record Outcome</button>
+          </div>
+          <div class="card p-0 overflow-auto">
+            <table><thead><tr><th>Participant</th><th>Placement ID</th><th>Follow-Up Date</th><th>Employed?</th><th>Retention</th></tr></thead>
+            <tbody id="outcomes-tbody"><tr><td colspan="5" class="text-center text-gray-400 py-6">Loading…</td></tr></tbody></table>
+          </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section id="section-reports" class="hidden space-y-4">
+          <div class="card space-y-3">
+            <p class="font-semibold">Programme Reports</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button class="btn btn-secondary text-sm" onclick="getReport('programme_summary')">Programme Summary</button>
+              <button class="btn btn-secondary text-sm" onclick="getReport('placement_rate')">Placement Rate</button>
+              <button class="btn btn-secondary text-sm" onclick="getReport('outcome_retention')">Outcome &amp; Retention</button>
+              <button class="btn btn-secondary text-sm" onclick="getReport('data_quality_summary')">DQ Summary</button>
+            </div>
+          </div>
+          <div id="report-output" class="card hidden">
+            <p id="report-content" class="text-sm whitespace-pre-wrap font-mono text-gray-700"></p>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="../shared/config.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/permissions.js"></script>
+  <script src="../shared/a11y.js"></script>
+  <script>
+    function showLoginScreen(msg) {
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('login-overlay').classList.remove('hidden');
+      if (msg) { const el=document.getElementById('login-msg'); el.textContent=msg; el.classList.remove('hidden'); }
+    }
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn=document.getElementById('login-btn'); btn.disabled=true; btn.textContent='Signing in…';
+      try {
+        await staffLogin(document.getElementById('login-email').value.trim(), document.getElementById('login-pw').value);
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        initDashboard();
+      } catch(err) { const el=document.getElementById('login-msg'); el.textContent=staffApiErrorMessage(err); el.className='status-bar status-error mb-4'; el.classList.remove('hidden'); }
+      finally { btn.disabled=false; btn.textContent='Sign In'; }
+    }
+    async function handleLogout() { await staffLogout(); showLoginScreen(); }
+    function initDashboard() {
+      const user=staffGetCurrentUser();
+      if (!user) return showLoginScreen();
+      document.getElementById('sidebar-user').textContent=user.displayName||user.email;
+      document.getElementById('header-user').textContent=(user.displayName||user.email)+' · M&E';
+      showSection('participants');
+    }
+    const TITLES={'participants':'Participants','data-quality':'Data Quality','outcomes':'Outcomes','reports':'Reports'};
+    function showSection(id) {
+      document.querySelectorAll('section[id^="section-"]').forEach(s=>s.classList.add('hidden'));
+      document.getElementById('section-'+id).classList.remove('hidden');
+      document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(l=>{ if(l.getAttribute('onclick')&&l.getAttribute('onclick').includes("'"+id+"'")) l.classList.add('active'); });
+      document.getElementById('section-title').textContent=TITLES[id]||id;
+      if (id==='data-quality') loadDqIssues();
+      if (id==='outcomes')     loadOutcomes();
+    }
+    function setGlobalStatus(msg,type) {
+      const el=document.getElementById('global-status');
+      if (!msg) { el.classList.add('hidden'); return; }
+      el.className='status-bar status-'+(type||'info')+' mx-6 mt-3'; el.textContent=msg; el.classList.remove('hidden');
+      setTimeout(()=>el.classList.add('hidden'),5000);
+    }
+    async function searchParticipants() {
+      const q=document.getElementById('p-search-q').value.trim();
+      const stage=document.getElementById('p-stage-filter').value;
+      const tbody=document.getElementById('p-tbody');
+      tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Searching…</td></tr>';
+      try {
+        const data=await staffApiPost('searchParticipants',{q,stage});
+        const rows=data.participants||[];
+        if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No results.</td></tr>'; return; }
+        tbody.innerHTML=rows.map(p=>`<tr>
+          <td class="font-mono text-xs">${esc(p.participantId)}</td>
+          <td>${esc([p.firstName,p.surname].filter(Boolean).join(' ')||p.consentName)}</td>
+          <td class="text-xs">${esc(p.region)}</td>
+          <td><span class="badge badge-blue">${esc(p.currentStage)}</span></td>
+          <td><span class="badge ${p.overallStatus==='active'?'badge-green':'badge-gray'}">${esc(p.overallStatus)}</span></td>
+          <td><button class="text-sm text-blue-600 underline" onclick="viewParticipant('${esc(p.participantId)}')">View</button></td>
+        </tr>`).join('');
+      } catch(err) { tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`; }
+    }
+    async function viewParticipant(pid) {
+      try {
+        const data=await staffApiPost('getParticipantDetail',{participantId:pid});
+        const p=data.participant||data;
+        openModal('Participant: '+pid,`<div class="space-y-1.5 text-sm">${Object.entries(p).filter(([k])=>!['passwordHash','signatureFileId'].includes(k)&&p[k]).map(([k,v])=>`<div class="flex gap-2"><span class="text-gray-400 w-44 text-xs pt-0.5">${esc(k)}</span><span class="break-all">${esc(String(v))}</span></div>`).join('')}</div>`);
+      } catch(err) { setGlobalStatus(staffApiErrorMessage(err),'error'); }
+    }
+    async function loadDqIssues() {
+      const tbody=document.getElementById('dq-tbody');
+      const status=document.getElementById('dq-filter').value;
+      tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">Loading…</td></tr>';
+      try {
+        const data=await staffApiPost('listDataQualityIssues',{status});
+        const rows=data.issues||[];
+        if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" class="text-center text-gray-400 py-6">No issues.</td></tr>'; return; }
+        const SEV={'critical':'badge-red','high':'badge-yellow','medium':'badge-blue','low':'badge-gray'};
+        tbody.innerHTML=rows.map(i=>`<tr>
+          <td class="font-mono text-xs">${esc(i.participantId)}</td>
+          <td class="text-xs">${esc(i.issueType)}</td>
+          <td><span class="badge ${SEV[i.severity]||'badge-gray'}">${esc(i.severity)}</span></td>
+          <td class="text-xs">${esc(i.fieldName)}</td>
+          <td><span class="badge badge-gray">${esc(i.status)}</span></td>
+          <td><button class="text-sm text-blue-600 underline" onclick='openResolveDq(${JSON.stringify(i)})'>Resolve</button></td>
+        </tr>`).join('');
+      } catch(err) { tbody.innerHTML=`<tr><td colspan="6" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`; }
+    }
+    function openResolveDq(issue) {
+      openModal('Resolve Issue',`<div class="space-y-3">
+        <div class="bg-gray-50 rounded p-3 text-sm"><div><b>${esc(issue.issueType)}</b> on <span class="font-mono">${esc(issue.participantId)}</span></div><div class="text-gray-500 text-xs mt-1">${esc(issue.fieldName)}: ${esc(issue.currentValue)}</div></div>
+        <div><label class="form-label">Resolution</label><select id="dq-res" class="form-input"><option value="fix_field">Fix field</option><option value="mark_not_duplicate">Not duplicate</option><option value="request_update">Request update</option><option value="accept_exception">Accept exception</option></select></div>
+        <div><label class="form-label">Notes</label><textarea id="dq-notes" class="form-input" rows="2"></textarea></div>
+        <div id="dq-modal-status" class="hidden"></div>
+        <button class="btn btn-primary w-full" onclick="submitResolveDq('${esc(issue.issueId)}')">Resolve</button>
+      </div>`);
+    }
+    async function submitResolveDq(issueId) {
+      try {
+        await staffApiPost('resolveDataQualityIssue',{issueId,resolution:document.getElementById('dq-res').value,notes:document.getElementById('dq-notes').value.trim()});
+        closeModal(); setGlobalStatus('Issue resolved.','success'); loadDqIssues();
+      } catch(err) { const el=document.getElementById('dq-modal-status'); el.className='status-bar status-error'; el.textContent=staffApiErrorMessage(err); el.classList.remove('hidden'); }
+    }
+    async function loadOutcomes() {
+      const tbody=document.getElementById('outcomes-tbody');
+      tbody.innerHTML='<tr><td colspan="5" class="text-center text-gray-400 py-6">Loading…</td></tr>';
+      try {
+        const data=await staffApiPost('getReport',{reportType:'outcome_list',limit:100});
+        const rows=data.rows||[];
+        if (!rows.length) { tbody.innerHTML='<tr><td colspan="5" class="text-center text-gray-400 py-6">No outcomes found.</td></tr>'; return; }
+        tbody.innerHTML=rows.map(o=>`<tr>
+          <td class="font-mono text-xs">${esc(o.participantId)}</td>
+          <td class="font-mono text-xs">${esc(o.placementId)}</td>
+          <td class="text-xs">${esc(o.followUpDate)}</td>
+          <td><span class="badge ${o.currentlyEmployed==='Yes'?'badge-green':'badge-red'}">${esc(o.currentlyEmployed||'—')}</span></td>
+          <td class="text-xs">${esc(o.retentionStatus)}</td>
+        </tr>`).join('');
+      } catch(err) { tbody.innerHTML=`<tr><td colspan="5" class="text-center text-red-400 py-4">${staffApiErrorMessage(err)}</td></tr>`; }
+    }
+    function openRecordOutcomeModal() {
+      openModal('Record Outcome',`<form class="space-y-3" onsubmit="submitOutcome(event)">
+        <div><label class="form-label">Participant ID</label><input id="oc-pid" class="form-input" required /></div>
+        <div><label class="form-label">Placement ID</label><input id="oc-plid" class="form-input" required /></div>
+        <div><label class="form-label">Follow-Up Date</label><input id="oc-date" class="form-input" type="date" required /></div>
+        <div><label class="form-label">Currently Employed?</label>
+          <select id="oc-employed" class="form-input"><option>Yes</option><option>No</option></select></div>
+        <div><label class="form-label">Retention Status</label>
+          <select id="oc-retention" class="form-input"><option value="">—</option><option>Retained</option><option>Exited</option><option>On Leave</option></select></div>
+        <div><label class="form-label">Feedback (optional)</label><textarea id="oc-feedback" class="form-input" rows="2"></textarea></div>
+        <div id="oc-status" class="hidden"></div>
+        <button type="submit" class="btn btn-primary w-full">Save Outcome</button>
+      </form>`);
+    }
+    async function submitOutcome(e) {
+      e.preventDefault();
+      try {
+        await staffApiPost('recordOutcome',{participantId:document.getElementById('oc-pid').value.trim(),placementId:document.getElementById('oc-plid').value.trim(),followUpDate:document.getElementById('oc-date').value,currentlyEmployed:document.getElementById('oc-employed').value,retentionStatus:document.getElementById('oc-retention').value,participantFeedback:document.getElementById('oc-feedback').value});
+        closeModal(); setGlobalStatus('Outcome recorded.','success'); loadOutcomes();
+      } catch(err) { const el=document.getElementById('oc-status'); el.className='status-bar status-error'; el.textContent=staffApiErrorMessage(err); el.classList.remove('hidden'); }
+    }
+    async function getReport(type) {
+      try {
+        const data=await staffApiPost('getReport',{reportType:type});
+        const el=document.getElementById('report-output');
+        document.getElementById('report-content').textContent=JSON.stringify(data,null,2);
+        el.classList.remove('hidden');
+      } catch(err) { setGlobalStatus(staffApiErrorMessage(err),'error'); }
+    }
+    function openModal(title,bodyHtml) { document.getElementById('modal-title').textContent=title; document.getElementById('modal-body').innerHTML=bodyHtml; document.getElementById('modal-bg').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('modal-bg').classList.add('hidden'); }
+    document.getElementById('modal-bg').addEventListener('click',e=>{ if(e.target.id==='modal-bg') closeModal(); });
+    function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    document.addEventListener('DOMContentLoaded',()=>{ if (isStaffAuthenticated()) { document.getElementById('login-overlay').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); initDashboard(); } else showLoginScreen(); });
+  </script>
+</body>
+</html>
