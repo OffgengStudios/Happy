@@ -173,6 +173,7 @@
   <script src="../shared/auth.js"></script>
   <script src="../shared/permissions.js"></script>
   <script src="../shared/a11y.js"></script>
+  <script src="../shared/ui.js"></script>
   <script>
     function showLoginScreen(msg){document.getElementById('app').classList.add('hidden');document.getElementById('login-overlay').classList.remove('hidden');if(msg){const el=document.getElementById('login-msg');el.textContent=msg;el.classList.remove('hidden');}}
     async function handleLogin(e){e.preventDefault();const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in…';try{await staffLogin(document.getElementById('login-email').value.trim(),document.getElementById('login-pw').value);document.getElementById('login-overlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');initDashboard();}catch(err){const el=document.getElementById('login-msg');el.textContent=staffApiErrorMessage(err);el.className='status-bar status-error mb-4';el.classList.remove('hidden');}finally{btn.disabled=false;btn.textContent='Sign In';}}
