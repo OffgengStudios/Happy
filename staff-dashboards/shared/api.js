@@ -20,9 +20,11 @@ async function staffApiPost(action, payload, requestId) {
 
   let response;
   try {
+    // text/plain avoids the CORS preflight that Apps Script cannot answer;
+    // doPost parses e.postData.contents as JSON regardless of content type.
     response = await fetch(STAFF_API_ENDPOINT, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body:    JSON.stringify(body),
     });
   } catch (_) {
