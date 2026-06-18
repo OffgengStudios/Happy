@@ -1001,7 +1001,7 @@
           </div>
           <div class="fld">
             <label class="lbl" for="pi-employmentStatus">Employment Status <span class="req">*</span></label>
-            <select id="pi-employmentStatus" class="inp" required>
+            <select id="pi-employmentStatus" class="inp" required onchange="onEmploymentStatusChange()">
               <option value="">— Select —</option>
               <option>Unemployed</option>
               <option>Self-employed</option>
@@ -1011,27 +1011,28 @@
               <option>Apprentice / Trainee</option>
             </select>
           </div>
-          <div class="fld">
-            <label class="lbl" for="pi-currentOccupation">Current Occupation</label>
+          <div class="fld hidden" id="pi-occupation-group">
+            <label class="lbl" id="pi-currentOccupation-label" for="pi-currentOccupation">Current Occupation</label>
             <input id="pi-currentOccupation" class="inp" type="text" />
           </div>
         </div>
       </div>
 
-      <!-- Sector & Job Interest -->
+      <!-- Sector & Job Interest / Work (label adapts to employment status) -->
       <div class="card accent-blue">
-        <div class="sect-lbl"><span class="sect-badge">F</span>Sector &amp; Job Interest</div>
+        <div class="sect-lbl"><span class="sect-badge">F</span><span id="pi-sector-section-title">Sector &amp; Job Interest</span></div>
+        <p id="pi-sector-hint" class="hidden" style="font-size:.8125rem;color:var(--text-2);margin-bottom:.75rem;line-height:1.45;"></p>
         <div class="field-stack">
           <div class="fld">
-            <label class="lbl" for="pi-sector">Sector</label>
+            <label class="lbl" id="pi-sector-label" for="pi-sector">Sector</label>
             <select id="pi-sector" class="inp"></select>
           </div>
           <div class="fld">
-            <label class="lbl" for="pi-industry">Industry</label>
+            <label class="lbl" id="pi-industry-label" for="pi-industry">Industry</label>
             <select id="pi-industry" class="inp"></select>
           </div>
           <div class="fld">
-            <label class="lbl" for="pi-jobRole">Job Role</label>
+            <label class="lbl" id="pi-jobRole-label" for="pi-jobRole">Job Role</label>
             <select id="pi-jobRole" class="inp"></select>
           </div>
         </div>

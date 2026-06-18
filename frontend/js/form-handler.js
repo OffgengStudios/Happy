@@ -426,6 +426,49 @@ function onIndustryChange(selectId) {
   setValue('pi-jobRole', '');
 }
 
+// Adapts the Sector & Job section to employment status: employed/trainee answer
+// about CURRENT work (+ occupation field); unemployed/student answer about the
+// work they WANT (occupation hidden). Falls back to neutral labels when unset.
+function onEmploymentStatusChange() {
+  const status = ($('pi-employmentStatus')?.value || '').trim();
+
+  const MODES = {
+    'Employed full-time': 'current',
+    'Employed part-time': 'current',
+    'Self-employed':      'current',
+    'Apprentice / Trainee': 'trade',
+    'Unemployed':         'interest',
+    'Student':            'interest',
+  };
+  const mode = MODES[status] || 'neutral';
+
+  const CFG = {
+    current:  { title: 'Your Current Work',     hint: 'Tell us about the work you currently do.',
+                sector: 'Sector you work in', industry: 'Industry', role: 'Your role / job',
+                occ: true, occLabel: 'Job title / occupation' },
+    trade:    { title: 'Your Trade & Work',     hint: 'Tell us about your trade or the work you are training in.',
+                sector: 'Sector of your trade', industry: 'Industry', role: 'Trade / role',
+                occ: true, occLabel: 'Current trade / occupation' },
+    interest: { title: 'Work Interest',         hint: (status === 'Student' ? 'Tell us the kind of work you would like after your studies.' : 'Tell us the kind of work you are looking for.'),
+                sector: 'Sector you want to work in', industry: 'Industry of interest', role: 'Role you are seeking',
+                occ: false, occLabel: '' },
+    neutral:  { title: 'Sector & Job Interest', hint: '',
+                sector: 'Sector', industry: 'Industry', role: 'Job Role', occ: false, occLabel: '' },
+  };
+  const c = CFG[mode];
+
+  setText('pi-sector-section-title', c.title);
+  setText('pi-sector-label',   c.sector);
+  setText('pi-industry-label', c.industry);
+  setText('pi-jobRole-label',  c.role);
+
+  const hint = $('pi-sector-hint');
+  if (hint) { hint.textContent = c.hint; toggle('pi-sector-hint', !!c.hint); }
+
+  toggle('pi-occupation-group', c.occ);
+  if (c.occ && c.occLabel) setText('pi-currentOccupation-label', c.occLabel);
+}
+
 // ─── ONLINE/OFFLINE BANNER ───────────────────────────────────────────────────
 
 function updateOnlineBanner() {
@@ -447,6 +490,7 @@ async function initApp() {
   updateOnlineBanner();
   populateRegions('pi-region');
   populateSectors('pi-sector');
+  onEmploymentStatusChange(); // set initial Sector/Job section state
 
   // Attach submit handlers
   $('consent-form')?.addEventListener('submit', handleConsentSubmit);

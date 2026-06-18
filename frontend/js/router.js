@@ -115,6 +115,9 @@ function prefillParticipantInfoScreen(p) {
 
   // Show participant ID
   if (p.participantId) setText('pi-participant-id', p.participantId);
+
+  // Adapt the Sector & Job section to the (possibly pre-filled) employment status.
+  if (typeof onEmploymentStatusChange === 'function') onEmploymentStatusChange();
 }
 
 function prefillCapacityScreen(p) {
