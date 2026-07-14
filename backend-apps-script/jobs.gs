@@ -30,6 +30,7 @@ function createJobOpportunity(payload, sessionToken, requestId) {
     lastUpdatedBy:    actor,
   });
   sheet.appendRow(HEADERS.JOB_OPPORTUNITIES.map(function(h) { return toSheetValue(record[h] !== undefined ? record[h] : ''); }));
+  invalidateRecordsCache(SHEET.JOB_OPPORTUNITIES);
 
   appendAudit(Object.assign(actorFields({ type: 'staff', staffUser: staff }), {
     requestId: requestId || '', action: 'job.created', entityType: 'job_opportunity',

@@ -101,6 +101,7 @@ function initConsent(payload, requestId) {
   } else {
     updateRow(master, HEADERS.MASTER, rowIndex, masterRecord);
   }
+  invalidateRecordsCache(SHEET.MASTER);
 
   // Write Token_Index record
   createTokenRecord(participantId, 'registration', rawToken, tokenDays);

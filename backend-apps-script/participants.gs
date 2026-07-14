@@ -177,14 +177,14 @@ function searchParticipants(payload, sessionToken) {
   var offset = parseInt(payload.offset || payload.cursor, 10) || 0;
   if (isNaN(offset) || offset < 0) offset = 0;
 
-  var master = getOrCreateSheet(SHEET.MASTER, HEADERS.MASTER);
-  if (master.getLastRow() < 2) return successResponse('', { participants: [], total: 0, cursor: null });
+  var all = getCachedRecords(SHEET.MASTER, HEADERS.MASTER);
+  if (!all.length) return successResponse('', { participants: [], total: 0, cursor: null });
 
   var qLower = q.toLowerCase();
   var qPhone = normalizePhone(q);
   var qGhana = /^GHA-/i.test(q) ? normalizeGhanaCard(q) : '';
 
-  var matched = getRecords(master, HEADERS.MASTER).filter(function(r) {
+  var matched = all.filter(function(r) {
     if (!r.participantId) return false;
     if (stage  && r.currentStage  !== stage)  return false;
     if (status && r.overallStatus !== status) return false;
@@ -227,6 +227,7 @@ function getParticipantDetail(payload, sessionToken) {
   var capacity = _getChildRecord(SHEET.CAPACITY_BUILDING,  HEADERS.CAPACITY_BUILDING,  participantId);
   var cvs      = _getChildRecords(SHEET.CV_RECORDS,        HEADERS.CV_RECORDS,         participantId);
   var placement = _getChildRecord(SHEET.JOB_PLACEMENT,     HEADERS.JOB_PLACEMENT,      participantId);
+  var outcomes  = _getChildRecords(SHEET.OUTCOME_TRACKING, HEADERS.OUTCOME_TRACKING,   participantId);
 
   if (staffUser.role === 'it_admin') {
     appendAudit(Object.assign(actorFields({ type: 'staff', staffUser: staffUser }), {
@@ -245,6 +246,7 @@ function getParticipantDetail(payload, sessionToken) {
     capacityBuilding: capacity,
     cvRecords:        (cvs || []).map(function(c) { return _sanitizeChildForRole(c, role, 'cv'); }),
     placement:        _sanitizeChildForRole(placement, role, 'placement'),
+    outcomes:         outcomes || [],
   });
 }
 
@@ -313,6 +315,9 @@ function saveParticipantInfo(payload, requestId) {
 
   normalizeDisplayFields(updates);
   updateRow(masterSheet, HEADERS.MASTER, rowIndex, updates);
+
+  // Re-read the updated Master row for stage decisions below.
+  var fullRecord = rowToObject(HEADERS.MASTER, masterSheet.getRange(rowIndex, 1, 1, HEADERS.MASTER.length).getValues()[0]);
 
   // Persist the full registration detail to Participant_Information. Master only
   // holds a summary subset; PI-only fields (sector, idType, voterId, income,
@@ -478,6 +483,7 @@ function createParticipantByStaff(payload, sessionToken, requestId) {
 
   normalizeDisplayFields(record);
   master.appendRow(HEADERS.MASTER.map(function(h) { return toSheetValue(record[h] !== undefined ? record[h] : ''); }));
+  invalidateRecordsCache(SHEET.MASTER);
 
   // Persist full registration detail to Participant_Information (PI-only fields included).
   var piRecord = pickKnownFields(payload, HEADERS.PARTICIPANT_INFO);

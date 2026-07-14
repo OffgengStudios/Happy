@@ -31,10 +31,21 @@ function uploadCvMetadata(payload, requestId) {
 
   var driveFileId = String(payload.driveFileId || '').trim();
   var fileName    = String(payload.fileName    || '').trim();
-  var fileType    = String(payload.fileType    || '').trim();
+  var fileType    = _normalizeCvMimeType(payload.fileType, fileName);
   var fileSizeBytes = Number(payload.fileSizeBytes) || 0;
 
-  if (!driveFileId) throw appError('VALIDATION_ERROR', 'driveFileId is required.');
+  // Base64 fallback (same as the staff path): the browser sends the file
+  // itself and we store it in Drive server-side. Avoids the Google OAuth
+  // client-id requirement entirely — needed for LAN-served frontends, where
+  // Google refuses private-IP origins.
+  if (!driveFileId && payload.cvDataUrl) {
+    var savedCv = _saveCvDataUrlToDrive(payload, participantId);
+    driveFileId = savedCv.id;
+    fileName    = fileName || savedCv.name;
+    fileType    = _normalizeCvMimeType(fileType || savedCv.mimeType, fileName || savedCv.name);
+  }
+
+  if (!driveFileId) throw appError('VALIDATION_ERROR', 'driveFileId or cvDataUrl is required.');
 
   _validateCvFile(driveFileId, fileName, fileType, fileSizeBytes);
 
@@ -78,7 +89,7 @@ function staffUploadCvMetadata(payload, sessionToken, requestId) {
 
   var driveFileId   = String(payload.driveFileId   || '').trim();
   var fileName      = String(payload.fileName      || '').trim();
-  var fileType      = String(payload.fileType      || '').trim();
+  var fileType      = _normalizeCvMimeType(payload.fileType, fileName);
   var fileSizeBytes = Number(payload.fileSizeBytes) || 0;
 
   // Accept base64 upload as fallback (staff portal only)
@@ -86,7 +97,7 @@ function staffUploadCvMetadata(payload, sessionToken, requestId) {
     var saved    = _saveCvDataUrlToDrive(payload, participantId);
     driveFileId  = saved.id;
     fileName     = saved.name;
-    fileType     = saved.mimeType;
+    fileType     = _normalizeCvMimeType(saved.mimeType, fileName || saved.name);
   }
 
   if (!driveFileId) throw appError('VALIDATION_ERROR', 'driveFileId or cvDataUrl is required.');
@@ -116,6 +127,54 @@ function staffUploadCvMetadata(payload, sessionToken, requestId) {
   }));
 
   return result;
+}
+
+// ─── PARSER PULL API (secret-verified in Code.gs before dispatch) ────────────
+// Google's servers cannot reach the LAN-hosted parser, so the parser POLLS:
+// listQueuedCvRecords → fetchCvFile (base64) → parse locally → receiveCvParserResult.
+
+function listQueuedCvRecords(payload, requestId) {
+  var limit = Math.min(parseInt(payload.limit, 10) || 10, 25);
+  var rows = getRecords(getOrCreateSheet(SHEET.CV_RECORDS, HEADERS.CV_RECORDS), HEADERS.CV_RECORDS)
+    .filter(function(r) {
+      // 'pending' is the initial status from uploadCvMetadata; 'queued' comes from
+      // the (unused) push path. Both — plus legacy blanks — belong to the pull queue.
+      var st = String(r.parserStatus || '').toLowerCase();
+      return (st === 'pending' || st === 'queued' || st === '') && String(r.driveFileId || '');
+    })
+    .sort(function(a, b) { return String(a.createdAt || '').localeCompare(String(b.createdAt || '')); })
+    .slice(0, limit)
+    .map(function(r) {
+      return {
+        cvRecordId:       r.cvRecordId,
+        participantId:    r.participantId,
+        driveFileId:      r.driveFileId,
+        originalFileName: r.originalFileName,
+        fileMimeType:     r.fileMimeType,
+        fileSizeBytes:    r.fileSizeBytes,
+        createdAt:        r.createdAt,
+      };
+    });
+  return successResponse(requestId, { records: rows, count: rows.length });
+}
+
+function fetchCvFile(payload, requestId) {
+  var cvRecordId = String(payload.cvRecordId || '').trim();
+  if (!cvRecordId) throw appError('VALIDATION_ERROR', 'cvRecordId is required.');
+
+  // Only files referenced by a CV record may be fetched — never arbitrary Drive ids.
+  var record = getRecords(getOrCreateSheet(SHEET.CV_RECORDS, HEADERS.CV_RECORDS), HEADERS.CV_RECORDS)
+    .filter(function(r) { return String(r.cvRecordId) === cvRecordId; })[0];
+  if (!record || !record.driveFileId) throw appError('NOT_FOUND', 'CV record or file not found: ' + cvRecordId);
+
+  var blob = DriveApp.getFileById(String(record.driveFileId)).getBlob();
+  return successResponse(requestId, {
+    cvRecordId:    cvRecordId,
+    participantId: record.participantId,
+    fileName:      record.originalFileName || blob.getName(),
+    mimeType:      blob.getContentType(),
+    base64:        Utilities.base64Encode(blob.getBytes()),
+  });
 }
 
 // ─── CV PARSER CALLBACK ───────────────────────────────────────────────────────
@@ -393,7 +452,8 @@ function _validateCvFile(driveFileId, fileName, fileType, fileSizeBytes) {
   }
 
   // File type check
-  var ext       = (fileName.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+  var ext       = _cvExtension(fileName);
+  fileType      = _normalizeCvMimeType(fileType, fileName);
   var validMime = ACCEPTED_CV_MIME_TYPES.indexOf(fileType) >= 0;
   var validExt  = ACCEPTED_CV_EXTENSIONS.indexOf(ext) >= 0;
   if (fileType && !validMime) throw appError('VALIDATION_ERROR', 'File type not accepted: ' + fileType);
@@ -434,6 +494,7 @@ function _writeCvRecord(opts, requestId) {
   cvSheet.appendRow(HEADERS.CV_RECORDS.map(function(h) {
     return toSheetValue(cvRecord[h] !== undefined ? cvRecord[h] : '');
   }));
+  invalidateRecordsCache(SHEET.CV_RECORDS);
 
   // Mirror active CV to Master (canonical cvFileId / cvFileUrl).
   var masterSheet = getOrCreateSheet(SHEET.MASTER, HEADERS.MASTER);
@@ -490,15 +551,35 @@ function _saveCvDataUrlToDrive(payload, participantId) {
   var match = String(payload.cvDataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
   if (!match) throw appError('VALIDATION_ERROR', 'Invalid CV data URL.');
 
-  var mimeType  = payload.fileType || match[1];
-  var bytes     = Utilities.base64Decode(match[2]);
   var safeName  = sanitizeFileName(payload.fileName || 'cv');
-  var ext       = mimeType === 'application/pdf' ? '.pdf' : mimeType.indexOf('word') >= 0 ? '.docx' : '';
-  var fileName  = participantId + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '_' + safeName + ext;
+  var mimeType  = _normalizeCvMimeType(payload.fileType || match[1], safeName);
+  var bytes     = Utilities.base64Decode(match[2]);
+  if (bytes.length > MAX_CV_SIZE_BYTES) {
+    throw appError('VALIDATION_ERROR', 'File exceeds maximum size of ' + (MAX_CV_SIZE_BYTES / 1024 / 1024) + ' MB.');
+  }
+  var ext       = _cvExtension(safeName);
+  if (!ext) ext = mimeType === 'application/pdf' ? '.pdf' : mimeType.indexOf('word') >= 0 ? '.docx' : '';
+  var baseName  = ext && safeName.toLowerCase().endsWith(ext) ? safeName.slice(0, -ext.length) : safeName;
+  var fileName  = participantId + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '_' + baseName + ext;
   var blob      = Utilities.newBlob(bytes, mimeType, fileName);
   var folderId  = getConfig('CV_UPLOAD_FOLDER_ID');
   var folder    = DriveApp.getFolderById(folderId);
   var file      = folder.createFile(blob);
 
   return { id: file.getId(), url: file.getUrl(), name: file.getName(), mimeType: mimeType };
+}
+
+function _cvExtension(fileName) {
+  return (String(fileName || '').match(/\.[^.]+$/) || [''])[0].toLowerCase();
+}
+
+function _normalizeCvMimeType(fileType, fileName) {
+  var mimeType = String(fileType || '').trim().toLowerCase();
+  var ext = _cvExtension(fileName);
+  if (!mimeType || mimeType === 'application/octet-stream' || mimeType === 'binary/octet-stream') {
+    if (ext === '.pdf') return 'application/pdf';
+    if (ext === '.docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (ext === '.doc') return 'application/msword';
+  }
+  return mimeType;
 }

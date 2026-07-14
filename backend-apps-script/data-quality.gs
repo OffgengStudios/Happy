@@ -727,6 +727,7 @@ function createDataQualityIssue(issue) {
 
   var sheet = getOrCreateSheet(SHEET.DATA_QUALITY_ISSUES, HEADERS.DATA_QUALITY_ISSUES);
   sheet.appendRow(row);
+  invalidateRecordsCache(SHEET.DATA_QUALITY_ISSUES);
 
   appendAudit({
     auditId:      'AUD-' + generateRequestId(),
@@ -809,6 +810,7 @@ function resolveDataQualityIssue(payload, sessionToken, requestId) {
   sheet.getRange(rowNum, rByIdx + 1).setValue(staff.staffUserId);
   sheet.getRange(rowNum, rAtIdx + 1).setValue(now);
   if (notes) sheet.getRange(rowNum, ntIdx + 1).setValue(notes);
+  invalidateRecordsCache(SHEET.DATA_QUALITY_ISSUES);
 
   var evt = newStatus === 'dismissed' ? EVENT.DQ_ISSUE_DISMISSED : EVENT.DQ_ISSUE_RESOLVED;
   appendAudit({

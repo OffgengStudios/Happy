@@ -49,3 +49,38 @@ function runHourlyMaintenance() {
   try { expired = sweepExpiredTokens();       } catch (e) { console.error('sweepExpiredTokens: ' + e.message); }
   return { idempotencyPurged: purged, tokensExpired: expired };
 }
+
+// ─── MIRROR EXPORT (secret-verified in Code.gs) ──────────────────────────────
+// Feeds the local PostgreSQL reporting mirror (infra/sync_sheets_to_pg.py).
+// Read-only, whitelisted tabs, paginated to stay under response size limits.
+
+var EXPORTABLE_TABS = {
+  Master:                  'MASTER',
+  Participant_Information: 'PARTICIPANT_INFO',
+  Capacity_Building:       'CAPACITY_BUILDING',
+  Job_Placement:           'JOB_PLACEMENT',
+  Outcome_Tracking:        'OUTCOME_TRACKING',
+  Job_Opportunities:       'JOB_OPPORTUNITIES',
+  CV_Records:              'CV_RECORDS',
+  Partnership_Submissions: 'PARTNERSHIP_SUBMISSIONS',
+  Partnership_Vacancies:   'PARTNERSHIP_VACANCIES',
+};
+
+function exportSheetData(payload, requestId) {
+  var tab = String(payload.tab || '').trim();
+  var key = EXPORTABLE_TABS[tab];
+  if (!key) throw appError('VALIDATION_ERROR', 'Tab not exportable: ' + tab);
+
+  var headers = HEADERS[key];
+  var limit   = Math.min(parseInt(payload.limit, 10) || 500, 1000);
+  var offset  = parseInt(payload.offset, 10) || 0;
+
+  var all = getRecords(getOrCreateSheet(SHEET[key], headers), headers);
+  return successResponse(requestId, {
+    tab:     tab,
+    headers: headers,
+    total:   all.length,
+    offset:  offset,
+    rows:    all.slice(offset, offset + limit),
+  });
+}

@@ -88,6 +88,7 @@ function runJobMatch(payload, sessionToken, requestId) {
     matchSheet.appendRow(HEADERS.JOB_MATCHES.map(function(h) { return toSheetValue(rec[h] !== undefined ? rec[h] : ''); }));
     created++;
   });
+  if (created) invalidateRecordsCache(SHEET.JOB_MATCHES);
 
   // Reflect that matching has run on the Master summary.
   var masterSheet = getOrCreateSheet(SHEET.MASTER, HEADERS.MASTER);

@@ -182,6 +182,7 @@ function updateRow(sheet, headers, rowIndex, values) {
   var merged   = Object.assign({}, existing, values);
   sheet.getRange(rowIndex, 1, 1, headers.length)
     .setValues([headers.map(function(h) { return toSheetValue(merged[h] !== undefined ? merged[h] : ''); })]);
+  try { invalidateRecordsCache(sheet.getName()); } catch (_) {}
 }
 
 // Formula-injection escape — prefix values starting with = + - @ with a single quote.

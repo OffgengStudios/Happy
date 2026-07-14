@@ -56,6 +56,59 @@ var REQUIRED_PROPS = [
   'CV_UPLOAD_FOLDER_ID', 'CONSENT_SIGNATURE_FOLDER_ID', 'CV_PARSER_INTEGRATION_SECRET'
 ];
 
+// --- First IT Admin login --------------------------------------------------
+// Paste a STRONG password (12+ chars), Run > createOrResetFirstAdmin(), CLEAR it.
+// Creates the IT Admin if missing, or resets its password if it already exists,
+// using ADMIN_BOOTSTRAP_EMAIL as the login email. Run this if you are locked out.
+var FIRST_ADMIN_PASSWORD = '';
+
+function createOrResetFirstAdmin() {
+  var email = normalizeEmail(getConfigOptional('ADMIN_BOOTSTRAP_EMAIL') || '');
+  if (!email) throw new Error('Set ADMIN_BOOTSTRAP_EMAIL in PROPS and run setupDeployment() first.');
+  if (!FIRST_ADMIN_PASSWORD || FIRST_ADMIN_PASSWORD.length < 12) {
+    throw new Error('Paste a password of at least 12 characters into FIRST_ADMIN_PASSWORD.');
+  }
+
+  var sheet  = getOrCreateSheet(SHEET.STAFF_USERS, HEADERS.STAFF_USERS);
+  var hashed = hashPassword(FIRST_ADMIN_PASSWORD);
+  var now    = new Date().toISOString();
+  var H      = HEADERS.STAFF_USERS;
+
+  // Locate an existing row for this email.
+  var rowNum = -1, existing = null;
+  if (sheet.getLastRow() >= 2) {
+    var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, H.length).getValues();
+    var emailIdx = H.indexOf('email');
+    for (var i = 0; i < rows.length; i++) {
+      if (normalizeEmail(rows[i][emailIdx]) === email) { rowNum = i + 2; existing = rowToObject(H, rows[i]); break; }
+    }
+  }
+
+  if (rowNum > 0) {
+    updateRow(sheet, H, rowNum, {
+      role: 'it_admin', status: 'active',
+      passwordHash: hashed.hash, passwordSalt: hashed.salt,
+      lastUpdatedAt: now, lastUpdatedBy: 'setup_reset',
+    });
+    Logger.log('RESET existing IT Admin password for ' + email + ' (staffUserId ' + existing.staffUserId + ').');
+  } else {
+    var rec = {
+      staffUserId: Utilities.getUuid(), email: email, displayName: 'IT Admin',
+      role: 'it_admin', status: 'active', passwordHash: hashed.hash, passwordSalt: hashed.salt,
+      lastLoginAt: '', failedLoginCount: 0, createdAt: now, createdBy: 'setup',
+      lastUpdatedAt: now, lastUpdatedBy: 'setup',
+    };
+    sheet.appendRow(H.map(function (h) { return rec[h] !== undefined ? rec[h] : ''; }));
+    Logger.log('CREATED IT Admin ' + email + '.');
+  }
+
+  // Clear any login-failure lockout for this email so you can sign in immediately.
+  try { CacheService.getScriptCache().remove('login_fail_count_' + email); } catch (e) {}
+
+  Logger.log('Done. Log in with ' + email + ' and the password you set, then CLEAR FIRST_ADMIN_PASSWORD.');
+  return { email: email, reset: rowNum > 0 };
+}
+
 // --- ACTIONS -----------------------------------------------------------------
 
 function setupDeployment() {

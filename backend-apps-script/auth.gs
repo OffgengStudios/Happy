@@ -6,7 +6,12 @@
 const SESSION_DURATION_HOURS = 6;
 const RATE_LIMIT_MAX_FAILURES = 5;
 const RATE_LIMIT_WINDOW_SECS  = 900;   // 15 minutes
-const PBKDF2_ITERATIONS       = 100000; // balance of security vs Apps Script timeout
+// Apps Script runs HMAC in a JS loop, so high PBKDF2 counts dominate login time.
+// 10k keeps login responsive; password hashes are additionally protected by the
+// separate TOKEN_HASH_PEPPER-style secret + restricted Sheet access.
+// NOTE: changing this invalidates existing hashes — re-run createOrResetFirstAdmin
+// (and reset any other staff passwords) after a change.
+const PBKDF2_ITERATIONS       = 10000;
 const PBKDF2_KEY_LEN          = 32;    // bytes
 
 // ─── ROLE PERMISSIONS MAP ─────────────────────────────────────────────────────
@@ -271,12 +276,128 @@ function staffLogin(payload, requestId) {
     displayName:      staffUser.displayName,
     role:             staffUser.role,
     permissions:      permissionsForRole(staffUser.role),
+    mustChangePassword: String(staffUser.mustChangePassword || '') === 'yes',
     staff: {
       email:       staffUser.email,
       role:        staffUser.role,
       permissions: permissionsForRole(staffUser.role),
     },
   };
+}
+
+// ─── SELF-SERVICE PASSWORD CHANGE ────────────────────────────────────────────
+
+function changeOwnPassword(payload, sessionToken, requestId) {
+  var staff = validateSession(sessionToken);
+
+  var currentPassword = String(payload.currentPassword || '');
+  var newPassword     = String(payload.newPassword || '');
+  if (!currentPassword || !newPassword) {
+    throw appError('VALIDATION_ERROR', 'currentPassword and newPassword are required.');
+  }
+  if (newPassword.length < 12) {
+    throw appError('VALIDATION_ERROR', 'New password must be at least 12 characters.');
+  }
+  if (newPassword === currentPassword) {
+    throw appError('VALIDATION_ERROR', 'New password must be different from the current one.');
+  }
+
+  var record = _getStaffUserById(staff.staffUserId);
+  if (!record) throw appError('NOT_FOUND', 'Staff user not found.');
+  if (!verifyPassword(currentPassword, record.passwordHash, record.passwordSalt)) {
+    throw appError('AUTH_REQUIRED', 'Current password is incorrect.');
+  }
+
+  var hashed = hashPassword(newPassword);
+  var rowIdx = _findStaffUserRow(staff.staffUserId);
+  var now    = new Date().toISOString();
+  updateRow(getOrCreateSheet(SHEET.STAFF_USERS, HEADERS.STAFF_USERS), HEADERS.STAFF_USERS, rowIdx, {
+    passwordHash:       hashed.hash,
+    passwordSalt:       hashed.salt,
+    mustChangePassword: '',
+    lastUpdatedAt:      now,
+    lastUpdatedBy:      staff.staffUserId,
+  });
+
+  appendAudit(Object.assign(actorFields({ type: 'staff', staffUser: staff }), {
+    requestId:  requestId || '',
+    action:     'staff.password_changed',
+    entityType: 'staff',
+    entityId:   staff.staffUserId,
+    status:     'success',
+    summary:    'Password changed by owner',
+  }));
+
+  return successResponse(requestId, { changed: true });
+}
+
+// ─── ADMIN PASSWORD RESET (emails a temporary password) ─────────────────────
+
+function adminResetStaffPassword(payload, sessionToken, requestId) {
+  var admin = validateSession(sessionToken);
+  requirePermission(admin, 'staff.manage');
+
+  var staffUserId = String(payload.staffUserId || '').trim();
+  if (!staffUserId) throw appError('VALIDATION_ERROR', 'staffUserId is required.');
+  var record = _getStaffUserById(staffUserId);
+  if (!record) throw appError('NOT_FOUND', 'Staff user not found.');
+
+  // Temporary password: 16 chars, unambiguous alphabet.
+  var alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  var temp = '';
+  for (var i = 0; i < 16; i++) temp += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+
+  var hashed = hashPassword(temp);
+  var rowIdx = _findStaffUserRow(staffUserId);
+  var now    = new Date().toISOString();
+  updateRow(getOrCreateSheet(SHEET.STAFF_USERS, HEADERS.STAFF_USERS), HEADERS.STAFF_USERS, rowIdx, {
+    passwordHash:       hashed.hash,
+    passwordSalt:       hashed.salt,
+    mustChangePassword: 'yes',
+    failedLoginCount:   0,
+    lastUpdatedAt:      now,
+    lastUpdatedBy:      admin.staffUserId,
+  });
+  CacheService.getScriptCache().remove('login_fail_count_' + normalizeEmail(record.email));
+
+  var emailed = false;
+  try {
+    MailApp.sendEmail({
+      to:      record.email,
+      subject: 'Happy Kollect — your password was reset',
+      body: [
+        'Hello ' + (record.displayName || '') + ',',
+        '',
+        'An administrator reset your Happy Kollect staff password.',
+        '',
+        '  Temporary password: ' + temp,
+        '',
+        'Sign in with it and you will be asked to choose a new password immediately.',
+        'If you did not expect this, contact your administrator.',
+        '',
+        '— HAPPY Program IT',
+      ].join('\n'),
+    });
+    emailed = true;
+  } catch (err) {
+    console.error('reset email failed: ' + err.message);
+  }
+
+  appendAudit(Object.assign(actorFields({ type: 'staff', staffUser: admin }), {
+    requestId:  requestId || '',
+    action:     'staff.password_reset',
+    entityType: 'staff',
+    entityId:   staffUserId,
+    status:     'success',
+    summary:    'Password reset for ' + record.email + (emailed ? ' (emailed)' : ' (email FAILED)'),
+  }));
+
+  // Only reveal the temporary password to the admin when email delivery failed.
+  return successResponse(requestId, {
+    reset:   true,
+    emailed: emailed,
+    tempPassword: emailed ? '' : temp,
+  });
 }
 
 function _enforceLoginRateLimit(email) {
@@ -478,6 +599,7 @@ function createStaffUser(payload, adminSession) {
     staffUserId, email, displayName, role, 'active',
     hashed.hash, hashed.salt,
     '', 0, now, admin.staffUserId, now, admin.staffUserId,
+    'yes',  // mustChangePassword — initial passwords are handed over, force a personal one
   ]);
 
   appendAudit(Object.assign(actorFields({ type: 'staff', staffUser: admin }), {

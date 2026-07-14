@@ -39,6 +39,16 @@ var ACTION_MAP = {
     return uploadCvMetadata(p, r);
   },
 
+  // ─── EMPLOYER PARTNERSHIP PORTAL (public — employers have no accounts) ──────
+
+  submitPartnership: function(p, s, r, ctx) {
+    return submitPartnership(p, r, ctx);
+  },
+
+  uploadPartnershipDocument: function(p, s, r, ctx) {
+    return uploadPartnershipDocument(p, r, ctx);
+  },
+
   // ─── STAFF AUTH ────────────────────────────────────────────────────────────
 
   staffLogin: function(p, s, r) {
@@ -77,6 +87,14 @@ var ACTION_MAP = {
 
   updateStaffUser: function(p, s, r) {
     return updateStaffUser(p, s, r);
+  },
+
+  changeOwnPassword: function(p, s, r) {
+    return changeOwnPassword(p, s, r);
+  },
+
+  adminResetStaffPassword: function(p, s, r) {
+    return adminResetStaffPassword(p, s, r);
   },
 
   // ─── PARTICIPANT OPERATIONS ────────────────────────────────────────────────
@@ -168,6 +186,18 @@ var ACTION_MAP = {
     return receiveCvParserResult(p, r);
   },
 
+  listQueuedCvRecords: function(p, s, r) {
+    return listQueuedCvRecords(p, r);
+  },
+
+  fetchCvFile: function(p, s, r) {
+    return fetchCvFile(p, r);
+  },
+
+  exportSheetData: function(p, s, r) {
+    return exportSheetData(p, r);
+  },
+
   receiveWhatsappWebhook: function(p, s, r, ctx) {
     return handleWhatsappWebhook(p, ctx && ctx.headers);
   },
@@ -220,6 +250,26 @@ var ACTION_MAP = {
 
   getReport: function(p, s, r) {
     return getReport(p, s, r);
+  },
+
+  getCandidatePipeline: function(p, s, r) {
+    return getCandidatePipeline(p, s, r);
+  },
+
+  searchPartnershipSubmissions: function(p, s, r) {
+    return searchPartnershipSubmissions(p, s);
+  },
+
+  getPartnershipDetail: function(p, s, r) {
+    return getPartnershipDetail(p, s);
+  },
+
+  updatePartnershipStatus: function(p, s, r) {
+    return updatePartnershipStatus(p, s, r);
+  },
+
+  cleanupStalePartnershipDocuments: function(p, s, r) {
+    return cleanupStalePartnershipDocuments(p, s);
   },
 
   exportReport: function(p, s, r) {

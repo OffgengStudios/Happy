@@ -39,6 +39,7 @@ function recordPlacement(payload, sessionToken, requestId) {
     lastUpdatedBy:   actor,
   });
   sheet.appendRow(HEADERS.JOB_PLACEMENT.map(function(h) { return toSheetValue(record[h] !== undefined ? record[h] : ''); }));
+  invalidateRecordsCache(SHEET.JOB_PLACEMENT);
 
   // Update Master summary and advance lifecycle to outcome tracking.
   var masterSheet = getOrCreateSheet(SHEET.MASTER, HEADERS.MASTER);

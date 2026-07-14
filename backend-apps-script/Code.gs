@@ -35,8 +35,10 @@ function doPost(e) {
       return _jsonResponse(errorResponse(requestId, 'VALIDATION_ERROR', 'Unknown action: ' + action));
     }
 
-    // Integration callback: verify secret before dispatch
-    if (action === 'receiveCvParserResult') {
+    // Integration actions: verify shared secret before dispatch.
+    // (Custom HTTP headers don't reach Apps Script reliably — payload fallback is the norm.)
+    var PARSER_ACTIONS = ['receiveCvParserResult', 'listQueuedCvRecords', 'fetchCvFile', 'exportSheetData'];
+    if (PARSER_ACTIONS.indexOf(action) >= 0) {
       var incomingSecret = reqHeaders['X-Integration-Secret'] || reqHeaders['x-integration-secret'] || payload.integrationSecret || '';
       var expectedSecret = getConfig('CV_PARSER_INTEGRATION_SECRET');
       if (!_constantTimeEqual(incomingSecret, expectedSecret)) {

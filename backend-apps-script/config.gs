@@ -19,6 +19,9 @@ const SHEET = {
   SYSTEM_CONFIG:        'System_Config',
   IDEMPOTENCY_LOG:      'Idempotency_Log',
   MERGE_HISTORY:        'Merge_History',
+  PARTNERSHIP_SUBMISSIONS: 'Partnership_Submissions',
+  PARTNERSHIP_VACANCIES:   'Partnership_Vacancies',
+  PARTNERSHIP_DOCUMENTS:   'Partnership_Documents',
 };
 
 // ─── CANONICAL HEADERS ────────────────────────────────────────────────────────
@@ -39,6 +42,9 @@ const HEADERS = {
     'parserCategory', 'parserSubcategory', 'parserConfidence',
     'assignedTeam', 'assignedStaffEmail', 'adminNotes',
     'createdAt', 'createdBy', 'lastUpdatedAt', 'lastUpdatedBy',
+    // Appended columns (ensureHeaders adds them to live sheets at the end —
+    // never insert new Master columns mid-array, order is positional):
+    'latestOutcomeEmployed', 'latestOutcomeDate',
   ],
 
   CONSENTS: [
@@ -134,6 +140,8 @@ const HEADERS = {
     'passwordHash', 'passwordSalt',
     'lastLoginAt', 'failedLoginCount',
     'createdAt', 'createdBy', 'lastUpdatedAt', 'lastUpdatedBy',
+    // Appended column (ensureHeaders adds it to the live sheet at the end):
+    'mustChangePassword',
   ],
 
   TOKEN_INDEX: [
@@ -171,6 +179,29 @@ const HEADERS = {
   MERGE_HISTORY: [
     'mergeId', 'survivingParticipantId', 'mergedParticipantId',
     'reason', 'mergedBy', 'mergedAt', 'fieldSummaryJson',
+  ],
+
+  PARTNERSHIP_SUBMISSIONS: [
+    'submissionId', 'referenceNumber', 'status',
+    'companyName', 'sector', 'companySize', 'region', 'city', 'website',
+    'contactName', 'contactRole', 'contactPhone', 'contactEmail',
+    'consentAgreement', 'consentContact',
+    'signatureFileId', 'signatureFileUrl',
+    'vacancyCount', 'documentCount',
+    'reviewNotes', 'reviewedBy', 'reviewedAt', 'convertedJobIds',
+    'createdAt', 'lastUpdatedAt', 'lastUpdatedBy',
+  ],
+
+  PARTNERSHIP_VACANCIES: [
+    'vacancyId', 'submissionId',
+    'jobTitle', 'location', 'employmentType', 'openings', 'compensation', 'description',
+    'jobOpportunityId', 'createdAt',
+  ],
+
+  PARTNERSHIP_DOCUMENTS: [
+    'documentId', 'submissionId',
+    'fileName', 'mimeType', 'fileSizeBytes',
+    'driveFileId', 'driveFileUrl', 'createdAt',
   ],
 };
 

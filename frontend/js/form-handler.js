@@ -56,7 +56,8 @@ function initSignatureCanvas() {
   canvas.addEventListener('mouseleave', ()  => { _sig.drawing = false; _sig.ctx?.closePath(); });
   canvas.addEventListener('touchstart', startStroke, { passive: false });
   canvas.addEventListener('touchmove',  e => { if (!_sig.drawing || !_sig.ctx) return; e.preventDefault(); const p = point(e); _sig.ctx.lineTo(p.x, p.y); _sig.ctx.stroke(); }, { passive: false });
-  canvas.addEventListener('touchend',   ()  => { _sig.drawing = false; _sig.ctx?.closePath(); });
+  canvas.addEventListener('touchend',    () => { _sig.drawing = false; _sig.ctx?.closePath(); });
+  canvas.addEventListener('touchcancel', () => { _sig.drawing = false; _sig.ctx?.closePath(); });
   window.addEventListener('resize', resize);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
   setTimeout(resize, 50);
@@ -259,7 +260,14 @@ async function handleCvFileSelected(e) {
   const allowed = ['application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/msword'];
-  if (!allowed.includes(file.type)) {
+  const ext = getFileExtension(file.name);
+  const allowedExt = ['.pdf', '.doc', '.docx'];
+  if (file.type && !allowed.includes(file.type) && !allowedExt.includes(ext)) {
+    showStatus('cv-status', 'Only PDF or Word documents (.pdf, .docx) are accepted.', 'error');
+    e.target.value = '';
+    return;
+  }
+  if (!file.type && !allowedExt.includes(ext)) {
     showStatus('cv-status', 'Only PDF or Word documents (.pdf, .docx) are accepted.', 'error');
     e.target.value = '';
     return;
@@ -274,14 +282,20 @@ async function handleCvFileSelected(e) {
   setText('cv-file-name', file.name);
   show('cv-file-selected');
 
-  // Upload to Drive via Google Drive API (Drive Picker flow in production).
-  // In this implementation the file is uploaded directly using fetch + Drive REST API.
-  showStatus('cv-status', 'Uploading to Drive…', 'info');
+  showStatus('cv-status', 'Uploading…', 'info');
   setSubmitting('cv-submit', true);
 
   try {
-    const driveFileId = await uploadFileToDrive(file);
-    await handleCvMetadataSubmit(driveFileId, file);
+    // Send the file itself; the backend stores it in the configured Drive
+    // folder server-side. This works from LAN/private origins and avoids
+    // candidate Google OAuth issues.
+    const cvDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new ApiError('INTEGRATION_ERROR', 'Could not read the selected file.'));
+      reader.readAsDataURL(file);
+    });
+    await handleCvMetadataSubmit('', file, cvDataUrl);
   } catch (err) {
     showStatus('cv-status', apiErrorMessage(err), 'error');
     setSubmitting('cv-submit', false);
@@ -311,7 +325,7 @@ async function uploadFileToDrive(file) {
   return json.id;
 }
 
-async function handleCvMetadataSubmit(driveFileId, file) {
+async function handleCvMetadataSubmit(driveFileId, file, cvDataUrl) {
   const token = getToken();
   if (!token) { showScreen('screen-token-invalid'); return; }
 
@@ -320,8 +334,9 @@ async function handleCvMetadataSubmit(driveFileId, file) {
     const data = await apiUploadCvMetadata({
       token,
       driveFileId,
+      cvDataUrl:     cvDataUrl || undefined,
       fileName:      file.name,
-      fileType:      file.type,
+      fileType:      file.type || inferCvMimeType(file.name),
       fileSizeBytes: file.size,
     }, requestId);
 
@@ -337,6 +352,19 @@ async function handleCvMetadataSubmit(driveFileId, file) {
   } finally {
     setSubmitting('cv-submit', false);
   }
+}
+
+function getFileExtension(fileName) {
+  const match = String(fileName || '').toLowerCase().match(/\.[^.]+$/);
+  return match ? match[0] : '';
+}
+
+function inferCvMimeType(fileName) {
+  const ext = getFileExtension(fileName);
+  if (ext === '.pdf') return 'application/pdf';
+  if (ext === '.docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (ext === '.doc') return 'application/msword';
+  return '';
 }
 
 // CV skip — participant defers CV

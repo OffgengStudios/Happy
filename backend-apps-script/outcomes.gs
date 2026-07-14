@@ -35,12 +35,24 @@ function recordOutcome(payload, sessionToken, requestId) {
     createdBy:     actor,
   });
   sheet.appendRow(HEADERS.OUTCOME_TRACKING.map(function(h) { return toSheetValue(record[h] !== undefined ? record[h] : ''); }));
+  invalidateRecordsCache(SHEET.OUTCOME_TRACKING);
 
   // Update the Master outcome summary. Mark complete when the participant has exited.
   var retention   = String(payload.retentionStatus || '').toLowerCase();
   var outcomeStatus = (retention === 'exited') ? 'complete' : 'in_progress';
   var masterSheet = getOrCreateSheet(SHEET.MASTER, HEADERS.MASTER);
-  updateRow(masterSheet, HEADERS.MASTER, masterRow, { outcomeStatus: outcomeStatus, lastUpdatedAt: now, lastUpdatedBy: actor });
+  var masterUpdates = { outcomeStatus: outcomeStatus, lastUpdatedAt: now, lastUpdatedBy: actor };
+
+  // Mirror the latest outcome onto Master so lists/pipeline don't need an
+  // Outcome_Tracking scan. Only overwrite when this follow-up is the newest.
+  var existingMaster = rowToObject(HEADERS.MASTER,
+    masterSheet.getRange(masterRow, 1, 1, HEADERS.MASTER.length).getValues()[0]);
+  var existingDate = String(existingMaster.latestOutcomeDate || '');
+  if (!existingDate || followUpDate >= existingDate) {
+    masterUpdates.latestOutcomeEmployed = String(payload.currentlyEmployed || '').toLowerCase();
+    masterUpdates.latestOutcomeDate     = followUpDate;
+  }
+  updateRow(masterSheet, HEADERS.MASTER, masterRow, masterUpdates);
 
   // Move to completed when outcome tracking is complete (guard re-checks).
   if (outcomeStatus === 'complete') {

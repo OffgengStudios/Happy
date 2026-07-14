@@ -32,9 +32,8 @@ function searchCvRecords(payload, sessionToken) {
 
   var status = String(payload.status || '').trim();
   var q      = String(payload.q || payload.query || '').trim();
-  var sheet  = getOrCreateSheet(SHEET.CV_RECORDS, HEADERS.CV_RECORDS);
 
-  var records = getRecords(sheet, HEADERS.CV_RECORDS).filter(function(r) {
+  var records = getCachedRecords(SHEET.CV_RECORDS, HEADERS.CV_RECORDS).filter(function(r) {
     if (status && r.parserStatus !== status && r.uploadStatus !== status && r.reviewStatus !== status) return false;
     return _matchesQuery(r, q, ['cvRecordId', 'participantId', 'originalFileName', 'uploadSource']);
   });
@@ -51,9 +50,8 @@ function searchMatches(payload, sessionToken) {
 
   var pid   = String(payload.participantId || '').trim();
   var q     = String(payload.q || payload.query || '').trim();
-  var sheet = getOrCreateSheet(SHEET.JOB_MATCHES, HEADERS.JOB_MATCHES);
 
-  var records = getRecords(sheet, HEADERS.JOB_MATCHES).filter(function(r) {
+  var records = getCachedRecords(SHEET.JOB_MATCHES, HEADERS.JOB_MATCHES).filter(function(r) {
     if (pid && String(r.participantId || '') !== pid) return false;
     return _matchesQuery(r, q, ['matchId', 'participantId', 'jobOpportunityId']);
   });
@@ -69,9 +67,8 @@ function searchPlacements(payload, sessionToken) {
   requirePermission(staff, 'placements.read');
 
   var q     = String(payload.q || payload.query || '').trim();
-  var sheet = getOrCreateSheet(SHEET.JOB_PLACEMENT, HEADERS.JOB_PLACEMENT);
 
-  var records = getRecords(sheet, HEADERS.JOB_PLACEMENT).filter(function(r) {
+  var records = getCachedRecords(SHEET.JOB_PLACEMENT, HEADERS.JOB_PLACEMENT).filter(function(r) {
     return _matchesQuery(r, q, ['placementId', 'participantId', 'employerName', 'jobRole']);
   }).map(function(r) { return _sanitizeChildForRole(r, staff.role, 'placement'); });
 
@@ -87,9 +84,8 @@ function searchJobOpportunities(payload, sessionToken) {
 
   var q      = String(payload.q || payload.query || '').trim();
   var status = String(payload.status || '').trim();
-  var sheet  = getOrCreateSheet(SHEET.JOB_OPPORTUNITIES, HEADERS.JOB_OPPORTUNITIES);
 
-  var records = getRecords(sheet, HEADERS.JOB_OPPORTUNITIES).filter(function(r) {
+  var records = getCachedRecords(SHEET.JOB_OPPORTUNITIES, HEADERS.JOB_OPPORTUNITIES).filter(function(r) {
     if (status && r.status !== status) return false;
     return _matchesQuery(r, q, ['jobOpportunityId', 'employerName', 'jobRole', 'sector', 'industry', 'region']);
   });
@@ -106,9 +102,8 @@ function getAuditLog(payload, sessionToken) {
 
   var pid    = String(payload.participantId || '').trim();
   var action = String(payload.action || '').trim();
-  var sheet  = getOrCreateSheet(SHEET.AUDIT_LOG, HEADERS.AUDIT_LOG);
 
-  var records = getRecords(sheet, HEADERS.AUDIT_LOG).filter(function(r) {
+  var records = getCachedRecords(SHEET.AUDIT_LOG, HEADERS.AUDIT_LOG).filter(function(r) {
     if (pid    && String(r.participantId || '') !== pid)  return false;
     if (action && String(r.action || '')        !== action) return false;
     return true;
