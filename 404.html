@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not found</title>
+<script>
+  // SPA deep links for the Employer Partnership Portal: GitHub Pages has no
+  // rewrites, so /Happy/portal/<route> lands here. Stow the path and bounce to
+  // the app, which restores it before React mounts. Other paths get a real 404.
+  (function () {
+    var path = location.pathname + location.search + location.hash;
+    if (path.indexOf('/Happy/portal/') === 0) {
+      sessionStorage.setItem('hepp-spa-path', path);
+      location.replace('/Happy/portal/');
+    }
+  })();
+</script>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F7F7F3;color:#1B2237;
+    font:16px/1.6 "Segoe UI",system-ui,sans-serif}
+  .card{text-align:center;max-width:420px;padding:40px 24px}
+  a{color:#2361E8;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1 style="font-size:22px">Page not found</h1>
+    <p>Try the <a href="/Happy/frontend/">HAPPY registration</a> or the
+       <a href="/Happy/portal/">Employer Partnership Portal</a>.</p>
+  </div>
+</body>
+</html>
