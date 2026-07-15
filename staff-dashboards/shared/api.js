@@ -8,8 +8,18 @@ const STAFF_API_ENDPOINT = (function () {
   return meta ? meta.getAttribute('content') : '';
 }());
 
+// crypto.randomUUID is unavailable in non-HTTPS contexts (e.g. LAN IP over
+// plain http), so fall back to a Math.random-based v4 UUID there.
+function staffGenerateRequestId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 async function staffApiPost(action, payload, requestId) {
-  const rid     = requestId || crypto.randomUUID();
+  const rid     = requestId || staffGenerateRequestId();
   const session = staffGetSession();
   const body    = {
     action,
