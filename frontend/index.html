@@ -1035,6 +1035,15 @@
             <label class="lbl" for="pi-community">Community</label>
             <input id="pi-community" class="inp" type="text" />
           </div>
+          <div class="fld">
+            <label class="lbl" for="pi-locationStatus">Area Type</label>
+            <select id="pi-locationStatus" class="inp">
+              <option value="">— Select —</option>
+              <option>Urban</option>
+              <option>Peri-Urban</option>
+              <option>Rural</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1092,6 +1101,56 @@
             <label class="lbl" id="pi-jobRole-label" for="pi-jobRole">Job Role</label>
             <select id="pi-jobRole" class="inp"></select>
           </div>
+          <!-- Current-work details: shown only when employment status = employed/self-employed/trainee -->
+          <div id="pi-current-work-group" class="hidden">
+            <div class="field-stack">
+              <div class="fld">
+                <label class="lbl" for="pi-monthlyIncome">Monthly Income (GH₵)</label>
+                <select id="pi-monthlyIncome" class="inp">
+                  <option value="">— Select —</option>
+                  <option>Below 500</option>
+                  <option>500 - 1000</option>
+                  <option>1001 - 1200</option>
+                  <option>1201 - 1500</option>
+                  <option>1501 - 2000</option>
+                  <option>Above 2000</option>
+                  <option>Prefer not to say</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-incomeFrequency">How often do you earn this?</label>
+                <select id="pi-incomeFrequency" class="inp">
+                  <option value="">— Select —</option>
+                  <option>Daily</option>
+                  <option>Weekly</option>
+                  <option>Monthly</option>
+                  <option>Seasonal</option>
+                  <option>Irregular</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-workRegion">Region of Work</label>
+                <select id="pi-workRegion" class="inp"></select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-workDistrict">District of Work</label>
+                <select id="pi-workDistrict" class="inp"></select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-workCommunity">Community of Work</label>
+                <input id="pi-workCommunity" class="inp" type="text" />
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-workLocationStatus">Work Area Type</label>
+                <select id="pi-workLocationStatus" class="inp">
+                  <option value="">— Select —</option>
+                  <option>Urban</option>
+                  <option>Peri-Urban</option>
+                  <option>Rural</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1113,8 +1172,20 @@
             <input id="pi-disabilitySpecify" class="inp" type="text" />
           </div>
           <div class="fld">
-            <label class="lbl" for="pi-refugeeStatus">Refugee / Displaced Status</label>
-            <select id="pi-refugeeStatus" class="inp">
+            <label class="lbl" for="pi-refugeeStatus">Refugee Status</label>
+            <select id="pi-refugeeStatus" class="inp" onchange="onRefugeeChange()">
+              <option value="">— Select —</option>
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+          <div id="pi-nationality-group" class="fld hidden">
+            <label class="lbl" for="pi-nationality">Nationality (country of origin)</label>
+            <input id="pi-nationality" class="inp" type="text" placeholder="e.g. Congolese" />
+          </div>
+          <div class="fld">
+            <label class="lbl" for="pi-displacementStatus">Internally Displaced Person (IDP) Status</label>
+            <select id="pi-displacementStatus" class="inp">
               <option value="">— Select —</option>
               <option>No</option>
               <option>Yes</option>

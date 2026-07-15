@@ -178,7 +178,8 @@ function collectParticipantInfoFields() {
     'ghanaCardId','voterId','idType','region','district','community','locationStatus',
     'educationLevel','employmentStatus','currentOccupation','monthlyIncome','incomeFrequency',
     'sector','industry','jobRole','jobType','disabilityStatus','disabilitySpecify',
-    'refugeeStatus','nationality','displacementStatus','nationalityOrigin'];
+    'refugeeStatus','nationality','displacementStatus','nationalityOrigin',
+    'workRegion','workDistrict','workCommunity','workLocationStatus'];
   const out = {};
   ids.forEach(id => {
     const el = $('pi-' + id);
@@ -495,6 +496,16 @@ function onEmploymentStatusChange() {
 
   toggle('pi-occupation-group', c.occ);
   if (c.occ && c.occLabel) setText('pi-currentOccupation-label', c.occLabel);
+
+  // Income + place-of-work details only make sense for people currently working.
+  toggle('pi-current-work-group', mode === 'current' || mode === 'trade');
+}
+
+// Nationality is asked only when the participant is a refugee.
+function onRefugeeChange() {
+  const isRefugee = ($('pi-refugeeStatus')?.value || '') === 'Yes';
+  toggle('pi-nationality-group', isRefugee);
+  if (!isRefugee) setValue('pi-nationality', '');
 }
 
 // ─── ONLINE/OFFLINE BANNER ───────────────────────────────────────────────────
@@ -517,8 +528,10 @@ window.addEventListener('offline', updateOnlineBanner);
 async function initApp() {
   updateOnlineBanner();
   populateRegions('pi-region');
+  populateRegions('pi-workRegion');
   populateSectors('pi-sector');
   onEmploymentStatusChange(); // set initial Sector/Job section state
+  onRefugeeChange();          // hide nationality unless refugee = Yes
 
   // Attach submit handlers
   $('consent-form')?.addEventListener('submit', handleConsentSubmit);
@@ -527,6 +540,10 @@ async function initApp() {
 
   // Cascading dropdowns
   $('pi-region')?.addEventListener('change',   () => onRegionChange('pi-region'));
+  $('pi-workRegion')?.addEventListener('change', () => {
+    populateDistricts($('pi-workRegion')?.value || '', 'pi-workDistrict');
+    setValue('pi-workDistrict', '');
+  });
   $('pi-sector')?.addEventListener('change',   () => onSectorChange('pi-sector'));
   $('pi-industry')?.addEventListener('change', () => onIndustryChange('pi-industry'));
 

@@ -92,6 +92,17 @@ function prefillParticipantInfoScreen(p) {
     'pi-educationLevel':   p.educationLevel  || '',
     'pi-employmentStatus': p.employmentStatus || '',
     'pi-currentOccupation': p.currentOccupation || '',
+    'pi-community':          p.community          || '',
+    'pi-locationStatus':     p.locationStatus     || '',
+    'pi-monthlyIncome':      p.monthlyIncome      || '',
+    'pi-incomeFrequency':    p.incomeFrequency    || '',
+    'pi-workCommunity':      p.workCommunity      || '',
+    'pi-workLocationStatus': p.workLocationStatus || '',
+    'pi-displacementStatus': p.displacementStatus || '',
+    'pi-nationality':        p.nationality        || '',
+    'pi-refugeeStatus':      p.refugeeStatus      || '',
+    'pi-disabilityStatus':   p.disabilityStatus   || '',
+    'pi-disabilitySpecify':  p.disabilitySpecify  || '',
   };
   Object.entries(fields).forEach(([id, val]) => setValue(id, val));
 
@@ -101,6 +112,12 @@ function prefillParticipantInfoScreen(p) {
     populateDistricts(p.region, 'pi-district');
     if (p.district) setValue('pi-district', p.district);
   }
+  if (p.workRegion) {
+    setValue('pi-workRegion', p.workRegion);
+    populateDistricts(p.workRegion, 'pi-workDistrict');
+    if (p.workDistrict) setValue('pi-workDistrict', p.workDistrict);
+  }
+  if (typeof onRefugeeChange === 'function') onRefugeeChange();
 
   // Cascading sector → industry → jobRole
   if (p.sector) {
