@@ -304,7 +304,7 @@
         _lastReport=d;
         const dq=d.dataQuality||{};const comp=dq.completeness||{};
         const warnRows=Object.entries(comp).filter(([,v])=>v<90);
-        const banner=(!d.hasOpeningBalances)?`<div class="status-bar status-info mb-2">No opening balances set — cumulative figures show platform data only. Click “Opening Balances” to enter the Y3Q3 closing figures.</div>`:'';
+        const banner='';
         const warn=warnRows.length?`<div class="status-bar status-error mb-2">Data completeness gaps: ${warnRows.map(([k,v])=>k+' '+v+'%').join(' · ')}. Fix these before submitting.</div>`:'';
         const mism=dq.derivedEmploymentMismatches?`<div class="status-bar status-error mb-2">${dq.derivedEmploymentMismatches} placement(s) where the manual employment category disagrees with the derived New/Improved — review before submitting.</div>`:'';
         const blocks=(d.blocks||[]).map(b=>`<tr class="bg-gray-50"><td colspan="4" class="font-semibold text-gray-700 pt-3">${esc(b.title)}</td></tr>`+
