@@ -96,6 +96,7 @@
         <a class="nav-link" onclick="showSection('audit-log')">Audit Log</a>
         <a class="nav-link" onclick="showSection('participants')">Participants</a>
         <a class="nav-link" onclick="showSection('bootstrap')">Bootstrap</a>
+        <a class="nav-link" onclick="showSection('danger-zone')" style="color:#fca5a5;">Danger Zone</a>
       </nav>
       <div class="px-3 py-3 border-t border-white/15">
         <button onclick="handleLogout()" class="nav-link w-full" style="color:#fecaca;">Sign Out</button>
@@ -252,6 +253,28 @@
           </div>
         </section>
 
+        <section id="section-danger-zone" class="hidden space-y-4">
+          <div class="card space-y-3" style="border:1px solid #fecaca;">
+            <p class="font-semibold text-red-700">Clear All Program Data</p>
+            <p class="text-sm text-gray-600">
+              Permanently deletes <b>every participant, consent, placement, outcome, partnership,
+              and enterprise record</b>, and resets ID numbering to 1. Staff logins and system
+              settings are preserved. This is intended for the testing phase — <b>there is no undo</b>.
+            </p>
+            <p class="text-sm text-gray-600">
+              Back up first: open the Sheet → <b>File → Make a copy</b>. Then type
+              <code class="px-1 bg-gray-100 rounded">DELETE ALL DATA</code> below to enable the button.
+            </p>
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" id="dz-audit" class="h-4 w-4" /> Also clear the audit log
+            </label>
+            <input id="dz-confirm" class="form-input text-sm" placeholder="Type DELETE ALL DATA to confirm"
+                   oninput="onDangerConfirmInput()" autocomplete="off" />
+            <button id="dz-btn" class="btn btn-danger text-sm" disabled onclick="clearAllData()">Clear All Data</button>
+            <div id="dz-result" class="hidden"></div>
+          </div>
+        </section>
+
       </main>
     </div>
   </div>
@@ -308,6 +331,7 @@
       'dashboard': 'Dashboard', 'staff-users': 'Staff Users',
       'system-config': 'System Configuration', 'data-quality': 'Data Quality Issues',
       'audit-log': 'Audit Log', 'participants': 'Participants', 'bootstrap': 'Bootstrap Tools',
+      'danger-zone': 'Danger Zone',
     };
 
     function showSection(id) {
@@ -693,6 +717,31 @@
     }
 
     // ─── BOOTSTRAP TOOLS ───────────────────────────────────────────────────────
+
+    // ── Danger Zone: clear all program data ──
+    function onDangerConfirmInput() {
+      const ok = document.getElementById('dz-confirm').value === 'DELETE ALL DATA';
+      document.getElementById('dz-btn').disabled = !ok;
+    }
+    async function clearAllData() {
+      const confirm = document.getElementById('dz-confirm').value;
+      if (confirm !== 'DELETE ALL DATA') return;
+      const clearAudit = document.getElementById('dz-audit').checked;
+      if (!window.confirm('Last check: permanently delete ALL program data' + (clearAudit ? ' and the audit log' : '') + '? This cannot be undone.')) return;
+      const btn = document.getElementById('dz-btn');
+      const el = document.getElementById('dz-result');
+      btn.disabled = true;
+      el.className = 'status-bar status-info mt-2'; el.textContent = 'Clearing…'; el.classList.remove('hidden');
+      try {
+        const data = await staffApiPost('adminResetData', { confirm, clearAudit });
+        el.className = 'status-bar status-success mt-2';
+        el.textContent = 'Cleared ' + (data.totalRows || 0) + ' rows across ' + (data.cleared ? data.cleared.length : 0) + ' tabs. Logins and settings preserved. Refresh the mirror to update local dashboards.';
+        document.getElementById('dz-confirm').value = '';
+      } catch (err) {
+        el.className = 'status-bar status-error mt-2'; el.textContent = staffApiErrorMessage(err);
+        btn.disabled = false;
+      }
+    }
 
     async function runBootstrap() {
       const el = document.getElementById('bootstrap-result');
