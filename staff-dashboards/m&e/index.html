@@ -103,7 +103,18 @@
         <!-- REPORTS -->
         <section id="section-reports" class="hidden space-y-4">
           <div class="card space-y-3">
-            <p class="font-semibold">Programme Reports</p>
+            <div class="flex justify-between items-center flex-wrap gap-2">
+              <p class="font-semibold">MCF Outcome Report — Executive Indicator Summary</p>
+              <div class="flex gap-2 items-center">
+                <select id="rep-quarter" class="form-input text-sm py-1.5" style="width:auto;"></select>
+                <button class="btn btn-primary text-sm" onclick="generateOutcomeReport()">Generate</button>
+                <button class="btn btn-secondary text-sm" onclick="openOpeningBalances()">Opening Balances</button>
+              </div>
+            </div>
+            <div id="outcome-report" class="hidden"></div>
+          </div>
+          <div class="card space-y-3">
+            <p class="font-semibold">Quick Reports</p>
             <div class="grid grid-cols-2 gap-3">
               <button class="btn btn-secondary text-sm" onclick="getReport('programme_summary')">Programme Summary</button>
               <button class="btn btn-secondary text-sm" onclick="getReport('placement_rate')">Placement Rate</button>
@@ -160,6 +171,7 @@
       document.getElementById('section-title').textContent=TITLES[id]||id;
       if (id==='data-quality') loadDqIssues();
       if (id==='outcomes')     loadOutcomes();
+      if (id==='reports')      populateQuarters();
     }
     function setGlobalStatus(msg,type) {
       const el=document.getElementById('global-status');
@@ -271,6 +283,58 @@
         document.getElementById('report-content').textContent=JSON.stringify(data,null,2);
         el.classList.remove('hidden');
       } catch(err) { setGlobalStatus(staffApiErrorMessage(err),'error'); }
+    }
+
+    // ── MCF Outcome Report (Executive Indicator Summary) ──
+    let _lastReport=null;
+    function populateQuarters(){
+      const sel=document.getElementById('rep-quarter');
+      if(!sel||sel.options.length)return;
+      // Program years run Oct–Sep; Y3 began Oct 2025. Offer Y3Q1..Y4Q2.
+      const qs=['Y3Q1','Y3Q2','Y3Q3','Y3Q4','Y4Q1','Y4Q2'];
+      sel.innerHTML=qs.map(q=>`<option ${q==='Y3Q4'?'selected':''}>${q}</option>`).join('');
+    }
+    async function generateOutcomeReport(){
+      const quarter=document.getElementById('rep-quarter').value;
+      const box=document.getElementById('outcome-report');
+      box.classList.remove('hidden');
+      box.innerHTML='<p class="text-sm text-gray-400 py-4">Generating…</p>';
+      try{
+        const d=await staffApiPost('getOutcomeReport',{quarter});
+        _lastReport=d;
+        const dq=d.dataQuality||{};const comp=dq.completeness||{};
+        const warnRows=Object.entries(comp).filter(([,v])=>v<90);
+        const banner=(!d.hasOpeningBalances)?`<div class="status-bar status-info mb-2">No opening balances set — cumulative figures show platform data only. Click “Opening Balances” to enter the Y3Q3 closing figures.</div>`:'';
+        const warn=warnRows.length?`<div class="status-bar status-error mb-2">Data completeness gaps: ${warnRows.map(([k,v])=>k+' '+v+'%').join(' · ')}. Fix these before submitting.</div>`:'';
+        const mism=dq.derivedEmploymentMismatches?`<div class="status-bar status-error mb-2">${dq.derivedEmploymentMismatches} placement(s) where the manual employment category disagrees with the derived New/Improved — review before submitting.</div>`:'';
+        const blocks=(d.blocks||[]).map(b=>`<tr class="bg-gray-50"><td colspan="4" class="font-semibold text-gray-700 pt-3">${esc(b.title)}</td></tr>`+
+          b.rows.map(r=>`<tr><td>${esc(r.label)}</td><td class="text-right tabular-nums">${r.thisQuarter}</td><td class="text-right tabular-nums text-gray-400">${r.isCumulative&&r.opening?('+'+r.opening):'—'}</td><td class="text-right tabular-nums font-semibold">${r.isCumulative?r.cumulative:r.thisQuarter}</td></tr>`).join('')
+        ).join('');
+        box.innerHTML=`${banner}${warn}${mism}
+          <div class="flex justify-between items-center mb-2"><p class="text-sm text-gray-500">${esc(d.quarter)} · ${esc(d.periodStart)} → ${esc(d.periodEnd)} · ${d.onboardedCohort} onboarded</p><button class="btn btn-secondary text-sm" onclick="downloadOutcomeCsv()">Download CSV</button></div>
+          <div class="overflow-auto"><table><thead><tr><th>Indicator</th><th class="text-right">This Quarter</th><th class="text-right">Opening</th><th class="text-right">Cumulative</th></tr></thead><tbody>${blocks}</tbody></table></div>`;
+      }catch(err){box.innerHTML=`<div class="status-bar status-error">${staffApiErrorMessage(err)}</div>`;}
+    }
+    function downloadOutcomeCsv(){
+      if(!_lastReport)return;
+      const rows=[['Block','Indicator','This Quarter','Opening','Cumulative']];
+      (_lastReport.blocks||[]).forEach(b=>b.rows.forEach(r=>rows.push([b.title,r.label,r.thisQuarter,r.isCumulative?r.opening:'',r.isCumulative?r.cumulative:r.thisQuarter])));
+      const csv=rows.map(r=>r.map(c=>{const s=String(c==null?'':c);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\n');
+      const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='mcf-outcome-'+_lastReport.quarter+'.csv';a.click();
+    }
+    async function openOpeningBalances(){
+      // Show the current report's cumulative indicators so M&E can enter Y3Q3 closing figures.
+      if(!_lastReport){setGlobalStatus('Generate a report first, then set opening balances against its indicators.','info');return;}
+      const cum=[];(_lastReport.blocks||[]).forEach(b=>b.rows.forEach(r=>{if(r.isCumulative&&!r.isCoverage)cum.push(r);}));
+      const fields=cum.map(r=>`<div class="flex items-center gap-2"><label class="form-label flex-1" style="margin:0;text-transform:none;">${esc(r.label)}</label><input id="ob-${esc(r.key)}" class="form-input" type="number" min="0" style="width:110px;" value="${r.opening||''}" /></div>`).join('');
+      openModal('Opening Balances (Y3Q3 closing figures)',`<form class="space-y-2" onsubmit="saveOpeningBalances(event)"><p class="text-xs text-gray-500">Enter the program-to-date totals as at the end of the previous quarter. These are added on top of platform-collected figures for cumulative indicators.</p>${fields}<div id="ob-status" class="hidden"></div><button type="submit" class="btn btn-primary w-full">Save</button></form>`);
+    }
+    async function saveOpeningBalances(e){
+      e.preventDefault();
+      const cum=[];(_lastReport.blocks||[]).forEach(b=>b.rows.forEach(r=>{if(r.isCumulative&&!r.isCoverage)cum.push(r);}));
+      const balances={};cum.forEach(r=>{const v=document.getElementById('ob-'+r.key).value;if(v!=='')balances[r.key]=Number(v);});
+      try{await staffApiPost('setReportOpeningBalances',{balances});closeModal();setGlobalStatus('Opening balances saved.','success');generateOutcomeReport();}
+      catch(err){const el=document.getElementById('ob-status');el.className='status-bar status-error';el.textContent=staffApiErrorMessage(err);el.classList.remove('hidden');}
     }
     function openModal(title,bodyHtml) { document.getElementById('modal-title').textContent=title; document.getElementById('modal-body').innerHTML=bodyHtml; document.getElementById('modal-bg').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal-bg').classList.add('hidden'); }
