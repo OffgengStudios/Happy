@@ -179,7 +179,11 @@ function collectParticipantInfoFields() {
     'educationLevel','employmentStatus','currentOccupation','monthlyIncome','incomeFrequency',
     'sector','industry','jobRole','jobType','disabilityStatus','disabilitySpecify',
     'refugeeStatus','nationality','displacementStatus','nationalityOrigin',
-    'workRegion','workDistrict','workCommunity','workLocationStatus'];
+    'workRegion','workDistrict','workCommunity','workLocationStatus',
+    // HAMIS Section A + E additions
+    'implementingPartner','preferredName','participantTypeSupport',
+    'secondaryPhone','referralPhone','referralRelationship','guarantorName','homeAddress',
+    'baselineEmploymentType','activeStudent','hostCommunity'];
   const out = {};
   ids.forEach(id => {
     const el = $('pi-' + id);
@@ -223,11 +227,17 @@ async function handleCapacityBuildingSubmit(e) {
   if (trainedByPartner === 'Yes') {
     const cbFields = ['trainingStartDate','trainingEndDate','trainingLocation','trainingMode',
       'virtualPlatform','trainerType','trainingPartner','completionStatus','certificateIssued',
-      'modules','digitalSkills','wishTraining','previousTrainings','previousTrainingDesc'];
+      'digitalSkills','wishTraining','previousTrainings','previousTrainingDesc',
+      // HAMIS Section B additions
+      'trainingSector','trainingIndustry','trainingJobRole',
+      'trainingRegion','trainingDistrict','trainingCommunity','trainingLocationStatus'];
     cbFields.forEach(f => {
       const el = $('cb-' + f);
       if (el) payload[f] = el.value || '';
     });
+    // Training courses are a checkbox group → store comma-joined in `modules`.
+    payload.modules = Array.from(document.querySelectorAll('.cb-module-cb:checked'))
+      .map(c => c.value).join(', ');
   }
   payload.trainedByPartner = trainedByPartner;
 
@@ -508,6 +518,12 @@ function onRefugeeChange() {
   if (!isRefugee) setValue('pi-nationality', '');
 }
 
+// Capacity-building: training sector → industry (same taxonomy as placements).
+function onTrainingSectorChange() {
+  populateIndustries($('cb-trainingSector')?.value || '', 'cb-trainingIndustry');
+  setValue('cb-trainingIndustry', '');
+}
+
 // ─── ONLINE/OFFLINE BANNER ───────────────────────────────────────────────────
 
 function updateOnlineBanner() {
@@ -529,6 +545,7 @@ async function initApp() {
   updateOnlineBanner();
   populateRegions('pi-region');
   populateRegions('pi-workRegion');
+  populateRegions('cb-trainingRegion');
   populateSectors('pi-sector');
   onEmploymentStatusChange(); // set initial Sector/Job section state
   onRefugeeChange();          // hide nationality unless refugee = Yes
@@ -546,6 +563,10 @@ async function initApp() {
   });
   $('pi-sector')?.addEventListener('change',   () => onSectorChange('pi-sector'));
   $('pi-industry')?.addEventListener('change', () => onIndustryChange('pi-industry'));
+  $('cb-trainingRegion')?.addEventListener('change', () => {
+    populateDistricts($('cb-trainingRegion')?.value || '', 'cb-trainingDistrict');
+    setValue('cb-trainingDistrict', '');
+  });
 
   // CV file input
   $('cv-file-input')?.addEventListener('change', handleCvFileSelected);

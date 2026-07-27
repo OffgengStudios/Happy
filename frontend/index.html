@@ -947,6 +947,21 @@
       <div class="card accent-violet">
         <div class="sect-lbl"><span class="sect-badge">A</span>Personal Details</div>
         <div class="field-stack">
+          <div class="fld">
+            <label class="lbl" for="pi-implementingPartner">Implementing Partner registering this participant</label>
+            <select id="pi-implementingPartner" class="inp">
+              <option value="">— Select —</option>
+              <option>TechnoServe</option>
+              <option>New Age</option>
+              <option>National Service Scheme</option>
+              <option>Ministry of Food &amp; Agriculture</option>
+              <option>MIDA</option>
+              <option>Jobberman</option>
+              <option>Ghana Enterprise Agency</option>
+              <option>Catholic Relief Services</option>
+              <option>AIL</option>
+            </select>
+          </div>
           <div class="fld-row">
             <div class="fld">
               <label class="lbl" for="pi-firstName">First Name <span class="req">*</span></label>
@@ -957,9 +972,15 @@
               <input id="pi-surname" class="inp" type="text" required autocomplete="family-name" />
             </div>
           </div>
-          <div class="fld">
-            <label class="lbl" for="pi-otherNames">Other Names</label>
-            <input id="pi-otherNames" class="inp" type="text" autocomplete="additional-name" />
+          <div class="fld-row">
+            <div class="fld">
+              <label class="lbl" for="pi-otherNames">Other Names</label>
+              <input id="pi-otherNames" class="inp" type="text" autocomplete="additional-name" />
+            </div>
+            <div class="fld">
+              <label class="lbl" for="pi-preferredName">Preferred Name</label>
+              <input id="pi-preferredName" class="inp" type="text" />
+            </div>
           </div>
           <div class="fld-row">
             <div class="fld">
@@ -976,6 +997,14 @@
               <input id="pi-dob" class="inp" type="date" required />
             </div>
           </div>
+          <div class="fld">
+            <label class="lbl" for="pi-participantTypeSupport">Participant type — support category</label>
+            <select id="pi-participantTypeSupport" class="inp">
+              <option value="">— Select —</option>
+              <option>Individual</option>
+              <option>Casual Worker</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -983,13 +1012,43 @@
       <div class="card accent-blue">
         <div class="sect-lbl"><span class="sect-badge">B</span>Contact</div>
         <div class="field-stack">
-          <div class="fld">
-            <label class="lbl" for="pi-telephone">Phone Number <span class="req">*</span></label>
-            <input id="pi-telephone" class="inp" type="tel" required autocomplete="tel" placeholder="0244 000 000" inputmode="numeric" />
+          <div class="fld-row">
+            <div class="fld">
+              <label class="lbl" for="pi-telephone">Primary Phone Number <span class="req">*</span></label>
+              <input id="pi-telephone" class="inp" type="tel" required autocomplete="tel" placeholder="0244 000 000" inputmode="numeric" />
+            </div>
+            <div class="fld">
+              <label class="lbl" for="pi-secondaryPhone">Secondary Phone Number</label>
+              <input id="pi-secondaryPhone" class="inp" type="tel" autocomplete="tel" placeholder="0244 000 000" inputmode="numeric" />
+            </div>
           </div>
           <div class="fld">
             <label class="lbl" for="pi-email">Email Address</label>
             <input id="pi-email" class="inp" type="email" autocomplete="email" />
+          </div>
+          <div class="fld">
+            <label class="lbl" for="pi-homeAddress">Home Address</label>
+            <input id="pi-homeAddress" class="inp" type="text" />
+          </div>
+          <div class="fld-row">
+            <div class="fld">
+              <label class="lbl" for="pi-referralPhone">Referral's Phone Number</label>
+              <input id="pi-referralPhone" class="inp" type="tel" placeholder="0244 000 000" inputmode="numeric" />
+            </div>
+            <div class="fld">
+              <label class="lbl" for="pi-referralRelationship">Referral's Relationship</label>
+              <select id="pi-referralRelationship" class="inp">
+                <option value="">— Select —</option>
+                <option>Son</option><option>Daughter</option><option>Nephew</option><option>Niece</option>
+                <option>Grandson</option><option>Granddaughter</option><option>Mother</option><option>Father</option>
+                <option>Adopted</option><option>Spouse</option><option>Husband</option><option>Wife</option>
+                <option>Sister</option><option>Brother</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="pi-guarantorName">Guarantor's Full Name</label>
+            <input id="pi-guarantorName" class="inp" type="text" />
           </div>
         </div>
       </div>
@@ -1002,10 +1061,9 @@
             <label class="lbl" for="pi-idType">ID Type</label>
             <select id="pi-idType" class="inp" onchange="toggleIdFields()">
               <option value="">— Select —</option>
+              <option>National ID</option>
               <option>Ghana Card</option>
-              <option>Voter ID</option>
-              <option>Passport</option>
-              <option>None</option>
+              <option>Voter's ID</option>
             </select>
           </div>
           <div id="pi-ghana-card-group" class="fld hidden">
@@ -1081,6 +1139,14 @@
             <label class="lbl" id="pi-currentOccupation-label" for="pi-currentOccupation">Current Occupation</label>
             <input id="pi-currentOccupation" class="inp" type="text" />
           </div>
+          <div class="fld">
+            <label class="lbl" for="pi-activeStudent">Currently an active student?</label>
+            <select id="pi-activeStudent" class="inp">
+              <option value="">— Select —</option>
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1108,11 +1174,15 @@
                 <label class="lbl" for="pi-monthlyIncome">Monthly Income (GH₵)</label>
                 <select id="pi-monthlyIncome" class="inp">
                   <option value="">— Select —</option>
-                  <option>Below 500</option>
-                  <option>500 - 1000</option>
+                  <option>None</option>
+                  <option>1 - 200</option>
+                  <option>201 - 500</option>
+                  <option>501 - 700</option>
+                  <option>701 - 1000</option>
                   <option>1001 - 1200</option>
                   <option>1201 - 1500</option>
-                  <option>1501 - 2000</option>
+                  <option>1501 - 1700</option>
+                  <option>1701 - 2000</option>
                   <option>Above 2000</option>
                   <option>Prefer not to say</option>
                 </select>
@@ -1126,6 +1196,15 @@
                   <option>Monthly</option>
                   <option>Seasonal</option>
                   <option>Irregular</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="pi-baselineEmploymentType">Employment Type</label>
+                <select id="pi-baselineEmploymentType" class="inp">
+                  <option value="">— Select —</option>
+                  <option>Wage</option>
+                  <option>Self</option>
                 </select>
               </div>
               <div class="fld">
@@ -1169,7 +1248,17 @@
           </div>
           <div id="pi-disability-specify-group" class="fld hidden">
             <label class="lbl" for="pi-disabilitySpecify">Type of Disability</label>
-            <input id="pi-disabilitySpecify" class="inp" type="text" />
+            <select id="pi-disabilitySpecify" class="inp">
+              <option value="">— Select —</option>
+              <option>Hearing</option>
+              <option>Visual</option>
+              <option>Speech</option>
+              <option>Physical or Mobility</option>
+              <option>Albinism</option>
+              <option>Intellectual</option>
+              <option>Invisible or Hidden</option>
+              <option>Multiple</option>
+            </select>
           </div>
           <div class="fld">
             <label class="lbl" for="pi-refugeeStatus">Refugee Status</label>
@@ -1186,6 +1275,14 @@
           <div class="fld">
             <label class="lbl" for="pi-displacementStatus">Internally Displaced Person (IDP) Status</label>
             <select id="pi-displacementStatus" class="inp">
+              <option value="">— Select —</option>
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="pi-hostCommunity">Does your community host refugees or displaced persons?</label>
+            <select id="pi-hostCommunity" class="inp">
               <option value="">— Select —</option>
               <option>No</option>
               <option>Yes</option>
@@ -1272,8 +1369,77 @@
               </select>
             </div>
             <div class="fld">
-              <label class="lbl" for="cb-digitalSkills">Digital Skills Acquired</label>
-              <input id="cb-digitalSkills" class="inp" type="text" placeholder="e.g. Microsoft Office, Mobile Money" />
+              <label class="lbl">Training courses attended</label>
+              <div id="cb-modules-group" class="field-stack" style="gap:.4rem;">
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="Soft Skills Training" /> Soft Skills Training</label>
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="Employability &amp; Career Essentials Training" /> Employability &amp; Career Essentials Training</label>
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="Customer Service &amp; Hospitality Training" /> Customer Service &amp; Hospitality Training</label>
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="General Customer Service Training" /> General Customer Service Training</label>
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="Digital Literacy Training" /> Digital Literacy Training</label>
+                <label class="cb-module"><input type="checkbox" class="cb-module-cb" value="Small Business Entrepreneurship Course" /> Small Business Entrepreneurship Course</label>
+              </div>
+            </div>
+            <div class="fld">
+              <label class="lbl" for="cb-digitalSkills">IT / Digital skills covered</label>
+              <select id="cb-digitalSkills" class="inp">
+                <option value="">— Select —</option>
+                <option>Coding for Front-End Development (COFED)</option>
+                <option>HAPPYTech Ambassador</option>
+                <option>e-agripreneurship</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="fld">
+              <label class="lbl" for="cb-trainerType">Type of Trainer</label>
+              <select id="cb-trainerType" class="inp">
+                <option value="">— Select —</option>
+                <option>Internal</option>
+                <option>Partner</option>
+                <option>Both</option>
+              </select>
+            </div>
+            <div class="fld-row">
+              <div class="fld">
+                <label class="lbl" for="cb-trainingSector">Sector the training relates to</label>
+                <select id="cb-trainingSector" class="inp" onchange="onTrainingSectorChange()">
+                  <option value="">— Select —</option>
+                  <option>Agriculture</option>
+                  <option>Non-Agriculture</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="cb-trainingIndustry">Industry / value chain</label>
+                <select id="cb-trainingIndustry" class="inp"></select>
+              </div>
+            </div>
+            <div class="fld">
+              <label class="lbl" for="cb-trainingJobRole">Job role the training targets</label>
+              <input id="cb-trainingJobRole" class="inp" type="text" />
+            </div>
+            <div class="fld-row">
+              <div class="fld">
+                <label class="lbl" for="cb-trainingRegion">Training Region</label>
+                <select id="cb-trainingRegion" class="inp"></select>
+              </div>
+              <div class="fld">
+                <label class="lbl" for="cb-trainingDistrict">Training District</label>
+                <select id="cb-trainingDistrict" class="inp"></select>
+              </div>
+            </div>
+            <div class="fld-row">
+              <div class="fld">
+                <label class="lbl" for="cb-trainingCommunity">Training Community</label>
+                <input id="cb-trainingCommunity" class="inp" type="text" />
+              </div>
+              <div class="fld">
+                <label class="lbl" for="cb-trainingLocationStatus">Training Area Type</label>
+                <select id="cb-trainingLocationStatus" class="inp">
+                  <option value="">— Select —</option>
+                  <option>Urban</option>
+                  <option>Peri-Urban</option>
+                  <option>Rural</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -1460,8 +1626,9 @@ function handleLookupSubmit() {
 
 function toggleIdFields() {
   const v = $('pi-idType')?.value || '';
-  revealEl('pi-ghana-card-group', v === 'Ghana Card');
-  revealEl('pi-voter-id-group',   v === 'Voter ID');
+  // The Ghana Card is Ghana's national ID, so both map to the GHA-format field.
+  revealEl('pi-ghana-card-group', v === 'Ghana Card' || v === 'National ID');
+  revealEl('pi-voter-id-group',   v === "Voter's ID");
 }
 function toggleDisabilityField() {
   revealEl('pi-disability-specify-group', $('pi-disabilityStatus')?.value === 'Yes');

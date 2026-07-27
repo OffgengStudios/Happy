@@ -103,6 +103,20 @@ function prefillParticipantInfoScreen(p) {
     'pi-refugeeStatus':      p.refugeeStatus      || '',
     'pi-disabilityStatus':   p.disabilityStatus   || '',
     'pi-disabilitySpecify':  p.disabilitySpecify  || '',
+    'pi-implementingPartner':   p.implementingPartner   || '',
+    'pi-preferredName':         p.preferredName         || '',
+    'pi-participantTypeSupport': p.participantTypeSupport || '',
+    'pi-secondaryPhone':        p.secondaryPhone        || '',
+    'pi-referralPhone':         p.referralPhone         || '',
+    'pi-referralRelationship':  p.referralRelationship  || '',
+    'pi-guarantorName':         p.guarantorName         || '',
+    'pi-homeAddress':           p.homeAddress           || '',
+    'pi-baselineEmploymentType': p.baselineEmploymentType || '',
+    'pi-activeStudent':         p.activeStudent         || '',
+    'pi-hostCommunity':         p.hostCommunity         || '',
+    'pi-idType':                p.idType                || '',
+    'pi-ghanaCardId':           p.ghanaCardId           || '',
+    'pi-voterId':               p.voterId               || '',
   };
   Object.entries(fields).forEach(([id, val]) => setValue(id, val));
 
@@ -118,6 +132,8 @@ function prefillParticipantInfoScreen(p) {
     if (p.workDistrict) setValue('pi-workDistrict', p.workDistrict);
   }
   if (typeof onRefugeeChange === 'function') onRefugeeChange();
+  if (typeof toggleIdFields === 'function') toggleIdFields();
+  if (typeof toggleDisabilityField === 'function') toggleDisabilityField();
 
   // Cascading sector → industry → jobRole
   if (p.sector) {
