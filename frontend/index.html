@@ -531,6 +531,9 @@
 
     /* ── MAIN CONTAINER ── */
     main { max-width: 520px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    /* Give the form a little more room on tablets/desktops so paired fields
+       (.fld-row) breathe, without letting single inputs get too wide to read. */
+    @media (min-width: 768px) { main { max-width: 660px; padding-left: 1.5rem; padding-right: 1.5rem; } }
 
     /* ── SCREEN HEADERS ── */
     .screen-head {
